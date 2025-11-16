@@ -37,6 +37,10 @@ class SyncService:
 
             all_items = queue_items + history_items
 
+            if not all_items:
+                print(f"[{datetime.now().strftime('%H:%M:%S')}] ⚠️  No items from SABnzbd")
+                return
+
             # Update database
             async for session in db.get_session():
                 for item in all_items:
@@ -44,7 +48,10 @@ class SyncService:
 
                 await session.commit()
 
-            print(f"[{datetime.now().strftime('%H:%M:%S')}] ✅ Synced {len(all_items)} downloads")
+            # Show stats
+            downloading_count = len([i for i in queue_items if i.get('status') == 'downloading'])
+            queued_count = len([i for i in queue_items if i.get('status') == 'queued'])
+            print(f"[{datetime.now().strftime('%H:%M:%S')}] ✅ Synced {len(all_items)} downloads (Downloading: {downloading_count}, Queued: {queued_count}, History: {len(history_items)})")
 
         except aiohttp.ClientConnectorError as e:
             print(f"[{datetime.now().strftime('%H:%M:%S')}] ⚠️  Cannot connect to SABnzbd - check if it's running and config.yml is correct")
@@ -118,20 +125,32 @@ class SyncService:
         """Fetch media info for downloads that don't have it yet (batched)."""
         try:
             async for session in db.get_session():
-                # Get up to 10 items without posters
+                # Count total without posters
+                total_result = await session.execute(
+                    select(Download)
+                    .where(Download.poster_url == None)
+                    .where(Download.status.in_(['downloading', 'queued']))
+                )
+                total_without = len(total_result.scalars().all())
+
+                if total_without == 0:
+                    return
+
+                # Get up to 20 items without posters (increased from 10)
                 result = await session.execute(
                     select(Download)
                     .where(Download.poster_url == None)
                     .where(Download.status.in_(['downloading', 'queued']))
-                    .limit(10)
+                    .limit(20)
                 )
                 downloads_without_info = result.scalars().all()
 
                 if not downloads_without_info:
                     return
 
-                print(f"[{datetime.now().strftime('%H:%M:%S')}] 🖼️  Fetching media info for {len(downloads_without_info)} items...")
+                print(f"[{datetime.now().strftime('%H:%M:%S')}] 🖼️  Fetching media info for {len(downloads_without_info)} items... ({total_without} remaining)")
 
+                found_count = 0
                 for download in downloads_without_info:
                     try:
                         media_info = await self.arr_manager.search_all(download.name)
@@ -141,12 +160,15 @@ class SyncService:
                             download.poster_url = media_info.get("poster_url")
                             download.year = media_info.get("year")
                             download.arr_instance = media_info.get("arr_instance")
-                            print(f"  ✓ Found: {media_info.get('media_title')} ({media_info.get('year')})")
+                            found_count += 1
                     except Exception as e:
-                        print(f"  ✗ Error fetching media info for {download.name}: {e}")
+                        print(f"  ✗ Error fetching media info for {download.name[:50]}: {e}")
                         continue
 
                 await session.commit()
+
+                remaining = total_without - found_count
+                print(f"  ✓ Found {found_count}/{len(downloads_without_info)} • {remaining} still need posters")
 
         except Exception as e:
             print(f"[{datetime.now().strftime('%H:%M:%S')}] ❌ Error fetching media info: {e}")
