@@ -1,0 +1,48 @@
+# SABnzbd Media Tracker Configuration
+# Copy this file to config.yml and fill in your details
+
+sabnzbd:
+  url: "http://localhost:8080"
+  api_key: "your_sabnzbd_api_key"
+
+# Configure your Radarr instances (movies)
+# IMPORTANT: The 'category' must match what you configured in Radarr's download client settings!
+radarr:
+  - name: "Radarr-Movies"
+    url: "http://192.168.50.237:8069"
+    api_key: "5eadbcfabcde4cc3a154821845882877"
+    category: "radarr-movies"  # Must match Radarr's SABnzbd category setting
+  - name: "Radarr-Movies-Animation"
+    url: "http://192.168.50.237:8071"
+    api_key: "706766470a6c4164966e812ccc05c904"
+    category: "radarr-movies-animation"  # Must match Radarr's SABnzbd category setting
+  - name: "Radarr-Movies-Anime"
+    url: "http://192.168.50.237:8072"
+    api_key: "3e26c3885ada4d149e0b805c95d1e2f6"
+    category: "radarr-movies-anime"  # Must match Radarr's SABnzbd category setting
+
+# Configure your Sonarr instances (TV shows)
+# IMPORTANT: The 'category' must match what you configured in Sonarr's download client settings!
+sonarr:
+  - name: "Sonarr"
+    url: "http://192.168.50.237:8068"
+    api_key: "9ae53a361a8f4885be71169b6610411a"
+    category: "sonarr-tvshows"  # Must match Sonarr's SABnzbd category setting
+  - name: "Sonarr-TvShows-Animation"
+    url: "http://192.168.50.237:8067"
+    api_key: "de3887025b164460b7025582213de018"
+    category: "sonarr-tvshows-animation"  # Must match Sonarr's SABnzbd category setting
+  - name: "Sonarr-TvShows-Anime"
+    url: "http://192.168.50.237:8066"
+    api_key: "72d42944e8954a42be7695620c77b2fe"
+    category: "sonarr-tvshows-anime"  # Must match Sonarr's SABnzbd category setting
+
+# Server settings
+server:
+  host: "0.0.0.0"
+  port: 3001
+
+# Cleanup settings
+cleanup:
+  completed_after_hours: 48  # Auto-remove completed items after 48 hours
+  check_interval_minutes: 60  # How often to run cleanup
