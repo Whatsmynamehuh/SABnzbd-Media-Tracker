@@ -36,13 +36,13 @@ export default function HeroDownload({ download, isLoading }) {
   }
 
   return (
-    <section className="w-full max-w-4xl mx-auto px-2">
-      <h2 className="text-2xl font-bold text-white mb-6 px-2">Downloading Now</h2>
+    <section className="w-full max-w-6xl mx-auto px-4 md:px-6">
+      <h2 className="text-2xl font-bold text-white mb-6">Downloading Now</h2>
 
       <div className="bg-jellyseerr-card rounded-2xl overflow-hidden border border-orange-500/50 shadow-2xl shadow-orange-500/20">
-        <div className="flex flex-col md:flex-row gap-6 p-6">
+        <div className="flex flex-col lg:flex-row gap-6 p-6 lg:p-8">
           {/* Large Poster */}
-          <div className="relative w-full md:w-80 h-[480px] flex-shrink-0 rounded-xl overflow-hidden bg-gray-900">
+          <div className="relative w-full lg:w-80 h-[400px] lg:h-[480px] flex-shrink-0 rounded-xl overflow-hidden bg-gray-900">
             {download.poster_url ? (
               <img
                 src={download.poster_url}
@@ -107,7 +107,7 @@ export default function HeroDownload({ download, isLoading }) {
             </div>
 
             {/* Stats Grid */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="bg-gray-900/50 rounded-xl p-4 border border-gray-800">
                 <p className="text-gray-500 text-sm mb-1">Speed</p>
                 <p className="text-2xl font-bold text-orange-400">
@@ -117,13 +117,13 @@ export default function HeroDownload({ download, isLoading }) {
 
               <div className="bg-gray-900/50 rounded-xl p-4 border border-gray-800">
                 <p className="text-gray-500 text-sm mb-1">Downloaded</p>
-                <p className="text-xl font-bold text-white">
+                <p className="text-lg lg:text-xl font-bold text-white break-words">
                   {formatSize(download.size_total - (download.size_left || 0))} / {formatSize(download.size_total)}
                 </p>
               </div>
 
               {download.category && (
-                <div className="col-span-2 bg-gray-900/50 rounded-xl p-4 border border-gray-800">
+                <div className="sm:col-span-2 bg-gray-900/50 rounded-xl p-4 border border-gray-800">
                   <p className="text-gray-500 text-sm mb-1">Category</p>
                   <p className="text-lg font-medium text-white">{download.category}</p>
                 </div>
