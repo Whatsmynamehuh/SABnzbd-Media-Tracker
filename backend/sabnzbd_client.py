@@ -112,6 +112,8 @@ class SABnzbdClient:
             else:
                 item_speed = 0.0
 
+            priority_value = slot.get("priority")
+
             items.append({
                 "id": slot.get("nzo_id"),
                 "name": slot.get("filename"),
@@ -123,9 +125,13 @@ class SABnzbdClient:
                 "time_left": slot.get("timeleft", "0:00:00"),
                 "speed": item_speed,
                 "category": slot.get("cat"),
-                "priority": slot.get("priority"),
+                "priority": priority_value,
                 "queue_position": position,  # Track position in queue
             })
+
+            # Debug: Log priority for top 3 items to diagnose auto-change issue
+            if position <= 3:
+                print(f"[SABnzbd Priority Debug] Pos {position}: '{slot.get('filename', 'Unknown')[:40]}...' - SABnzbd reports priority: '{priority_value}'")
 
         return items
 
