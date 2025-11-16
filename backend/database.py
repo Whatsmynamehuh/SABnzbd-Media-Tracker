@@ -31,6 +31,10 @@ class Download(Base):
     arr_instance = Column(String, nullable=True)  # Which Radarr/Sonarr instance
     poster_attempted = Column(Boolean, default=False)  # Have we tried fetching poster?
 
+    # TV Show episode info (for media_type='tv')
+    season = Column(Integer, nullable=True)  # Season number (e.g., 1, 2, 3)
+    episode = Column(Integer, nullable=True)  # Episode number (e.g., 1, 2, 3)
+
     # Timestamps
     added_at = Column(DateTime, default=datetime.utcnow)
     completed_at = Column(DateTime, nullable=True)

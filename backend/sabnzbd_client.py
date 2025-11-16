@@ -1,6 +1,7 @@
 import aiohttp
 from typing import List, Dict, Any, Optional
 from datetime import datetime
+import PTN
 
 
 class SABnzbdClient:
@@ -119,6 +120,12 @@ class SABnzbdClient:
                 print(f"[RAW Priority Debug] Pos {position}: RAW value = {repr(priority_value)} (type: {type(priority_value).__name__})")
                 print(f"[RAW Priority Debug] Pos {position}: Full slot data = {slot}")
 
+            # Parse filename to extract season/episode for TV shows
+            filename = slot.get("filename", "")
+            parsed = PTN.parse(filename)
+            season = parsed.get("season")
+            episode = parsed.get("episode")
+
             items.append({
                 "id": slot.get("nzo_id"),
                 "name": slot.get("filename"),
@@ -132,6 +139,8 @@ class SABnzbdClient:
                 "category": slot.get("cat"),
                 "priority": priority_value,
                 "queue_position": position,  # Track position in queue
+                "season": season,  # Season number for TV shows
+                "episode": episode,  # Episode number for TV shows
             })
 
         return items
@@ -191,6 +200,12 @@ class SABnzbdClient:
                 except:
                     completed_at = None
 
+            # Parse filename to extract season/episode for TV shows
+            filename = slot.get("name", "")
+            parsed = PTN.parse(filename)
+            season = parsed.get("season")
+            episode = parsed.get("episode")
+
             items.append({
                 "id": slot.get("nzo_id"),
                 "name": slot.get("name"),
@@ -201,6 +216,8 @@ class SABnzbdClient:
                 "completed_at": completed_at,
                 "failed": failed,
                 "failure_reason": slot.get("fail_message"),
+                "season": season,  # Season number for TV shows
+                "episode": episode,  # Episode number for TV shows
             })
 
         return items

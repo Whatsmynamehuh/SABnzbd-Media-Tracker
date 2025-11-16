@@ -83,10 +83,15 @@ export default function DownloadCard({ download, section }) {
           {download.media_title || download.name}
         </h3>
 
-        {/* Year and Source */}
-        <div className="flex items-center gap-2 text-xs text-gray-400 mb-4">
+        {/* Year, Season/Episode, and Source */}
+        <div className="flex items-center gap-2 text-xs text-gray-400 mb-4 flex-wrap">
           {download.year && (
             <span className="px-2 py-1 bg-white/10 rounded-lg font-medium">{download.year}</span>
+          )}
+          {download.media_type === 'tv' && download.season && download.episode && (
+            <span className="px-2 py-1 bg-orange-500/20 border border-orange-500/30 rounded-lg font-bold text-orange-400">
+              S{String(download.season).padStart(2, '0')}E{String(download.episode).padStart(2, '0')}
+            </span>
           )}
           {download.arr_instance && (
             <span className="px-2 py-1 bg-white/10 rounded-lg font-medium truncate">

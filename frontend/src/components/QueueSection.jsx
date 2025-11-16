@@ -97,6 +97,12 @@ function QueueItem({ download, position }) {
                   <span>{download.media_type === 'movie' ? '🎬' : '📺'}</span>
                 </>
               )}
+              {download.media_type === 'tv' && download.season && download.episode && (
+                <>
+                  <span>•</span>
+                  <span className="text-orange-400 font-semibold">S{String(download.season).padStart(2, '0')}E{String(download.episode).padStart(2, '0')}</span>
+                </>
+              )}
               {download.category && (
                 <>
                   <span>•</span>

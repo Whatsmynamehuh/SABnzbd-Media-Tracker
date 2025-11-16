@@ -143,9 +143,16 @@ export default function HeroDownload({ download, isLoading }) {
                   <h3 className="text-3xl font-bold text-white mb-2">
                     {download.media_title || download.name}
                   </h3>
-                  {download.year && (
-                    <p className="text-gray-400 text-lg">{download.year}</p>
-                  )}
+                  <div className="flex items-center gap-3 flex-wrap">
+                    {download.year && (
+                      <p className="text-gray-400 text-lg">{download.year}</p>
+                    )}
+                    {download.media_type === 'tv' && download.season && download.episode && (
+                      <span className="px-3 py-1 bg-orange-500/20 border border-orange-500/30 rounded-lg font-bold text-orange-400 text-lg">
+                        S{String(download.season).padStart(2, '0')}E{String(download.episode).padStart(2, '0')}
+                      </span>
+                    )}
+                  </div>
                   {download.arr_instance && (
                     <p className="text-gray-500 text-sm mt-1">{download.arr_instance}</p>
                   )}
