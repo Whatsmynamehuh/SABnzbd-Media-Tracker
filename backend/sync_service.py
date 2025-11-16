@@ -7,6 +7,7 @@ from backend.database import Download, db
 from backend.sabnzbd_client import SABnzbdClient
 from backend.arr_client import ArrManager
 from backend.config import get_config
+from backend.logger import logger
 from typing import List, Dict, Any
 
 
@@ -24,7 +25,7 @@ class SyncService:
 
         self.cleanup_hours = config.cleanup.completed_after_hours
 
-    async def sync_downloads(self, fetch_media_info: bool = True):
+    async def sync_downloads(self, fetch_media_info: bool = True, is_initial: bool = False):
         """Sync downloads from SABnzbd to database."""
         try:
             # Get queue and history from SABnzbd
@@ -38,7 +39,7 @@ class SyncService:
             all_items = queue_items + history_items
 
             if not all_items:
-                print(f"[{datetime.now().strftime('%H:%M:%S')}] ⚠️  No items from SABnzbd")
+                print(f"{logger.timestamp()} ⚠️  No items from SABnzbd")
                 return
 
             # Update database
@@ -48,15 +49,24 @@ class SyncService:
 
                 await session.commit()
 
-            # Show stats
+            # Calculate stats
             downloading_count = len([i for i in queue_items if i.get('status') == 'downloading'])
             queued_count = len([i for i in queue_items if i.get('status') == 'queued'])
-            print(f"[{datetime.now().strftime('%H:%M:%S')}] ✅ Synced {len(all_items)} downloads (Downloading: {downloading_count}, Queued: {queued_count}, History: {len(history_items)})")
+            completed_count = len([i for i in history_items if not i.get('failed')])
+
+            # Log based on context
+            if is_initial:
+                # Initial sync - show full details
+                active_download = next((i for i in queue_items if i.get('status') == 'downloading'), None)
+                logger.initial_sync(downloading_count, queued_count, completed_count, active_download)
+            else:
+                # Regular sync - only log changes
+                logger.sync_change(downloading_count, queued_count, completed_count)
 
         except aiohttp.ClientConnectorError as e:
-            print(f"[{datetime.now().strftime('%H:%M:%S')}] ⚠️  Cannot connect to SABnzbd - check if it's running and config.yml is correct")
+            print(f"{logger.timestamp()} ⚠️  Cannot connect to SABnzbd - check if it's running and config.yml is correct")
         except Exception as e:
-            print(f"[{datetime.now().strftime('%H:%M:%S')}] ❌ Error syncing downloads: {e}")
+            print(f"{logger.timestamp()} ❌ Error syncing downloads: {e}")
 
     async def _update_or_create_download(self, session: AsyncSession, item: Dict[str, Any], fetch_media_info: bool = True):
         """Update or create a download record."""
@@ -93,21 +103,46 @@ class SyncService:
             cutoff_time = datetime.utcnow() - timedelta(hours=self.cleanup_hours)
 
             async for session in db.get_session():
-                result = await session.execute(
-                    delete(Download).where(
+                # First, get items that will be deleted
+                to_delete_result = await session.execute(
+                    select(Download).where(
                         Download.status == "completed",
                         Download.completed_at < cutoff_time
                     )
                 )
+                to_delete = to_delete_result.scalars().all()
 
-                await session.commit()
+                # Get total completed count
+                all_completed_result = await session.execute(
+                    select(Download).where(Download.status == "completed")
+                )
+                total_completed = len(all_completed_result.scalars().all())
 
-                deleted_count = result.rowcount
-                if deleted_count > 0:
-                    print(f"[{datetime.now().strftime('%H:%M:%S')}] 🗑️  Cleaned up {deleted_count} completed downloads (older than {self.cleanup_hours}h)")
+                if len(to_delete) > 0:
+                    logger.cleanup_start(total_completed)
+
+                    # Create list of removed items with time info
+                    removed_items = []
+                    for item in to_delete:
+                        hours_ago = (datetime.utcnow() - item.completed_at).total_seconds() / 3600
+                        name = item.media_title or item.name
+                        removed_items.append(f"{name[:40]} (completed {hours_ago:.0f}h ago)")
+
+                    # Now delete them
+                    await session.execute(
+                        delete(Download).where(
+                            Download.status == "completed",
+                            Download.completed_at < cutoff_time
+                        )
+                    )
+                    await session.commit()
+
+                    # Log results
+                    kept_count = total_completed - len(to_delete)
+                    logger.cleanup_complete(removed_items, kept_count)
 
         except Exception as e:
-            print(f"Error cleaning up completed downloads: {e}")
+            print(f"{logger.timestamp()} ❌ Error during cleanup: {e}")
 
     async def get_all_downloads(self, session: AsyncSession) -> List[Download]:
         """Get all downloads from database."""
@@ -167,7 +202,7 @@ class SyncService:
                     )
                     downloads_without_info = result.scalars().all()
                     fetch_type = "downloading"
-                    print(f"[{datetime.now().strftime('%H:%M:%S')}] 🖼️  Fetching poster for downloading item... ({completed_without} completed + {queued_without} queued remaining)")
+                    logger.poster_fetch_start("downloading", downloading_without, completed_without, queued_without)
 
                 elif completed_without > 0:
                     # Priority 2: Recently completed items (newest first)
@@ -180,7 +215,7 @@ class SyncService:
                     )
                     downloads_without_info = result.scalars().all()
                     fetch_type = "completed"
-                    print(f"[{datetime.now().strftime('%H:%M:%S')}] 🖼️  Fetching posters for completed items... ({completed_without} completed + {queued_without} queued remaining)")
+                    logger.poster_fetch_start("completed", downloading_without, completed_without, queued_without)
 
                 elif queued_without > 0:
                     # Priority 3: Queued items (by position #2, #3, #4...)
@@ -193,7 +228,7 @@ class SyncService:
                     )
                     downloads_without_info = result.scalars().all()
                     fetch_type = "queued"
-                    print(f"[{datetime.now().strftime('%H:%M:%S')}] 🖼️  Fetching posters for queue (by position)... ({queued_without} remaining)")
+                    logger.poster_fetch_start("queued", downloading_without, completed_without, queued_without)
 
                 else:
                     return
@@ -201,7 +236,10 @@ class SyncService:
                 if not downloads_without_info:
                     return
 
-                found_count = 0
+                # Fetch posters
+                found_items = []
+                not_found_items = []
+
                 for download in downloads_without_info:
                     try:
                         media_info = await self.arr_manager.search_all(download.name)
@@ -211,20 +249,36 @@ class SyncService:
                             download.poster_url = media_info.get("poster_url")
                             download.year = media_info.get("year")
                             download.arr_instance = media_info.get("arr_instance")
-                            found_count += 1
+
+                            # Format display name
+                            display_name = f"{media_info.get('media_title')} ({media_info.get('year')})" if media_info.get('year') else media_info.get('media_title')
+                            if media_info.get('arr_instance'):
+                                display_name += f" [{media_info.get('arr_instance')}]"
+                            found_items.append(display_name)
+                        else:
+                            not_found_items.append(download.name[:50])
                     except Exception as e:
-                        print(f"  ✗ Error: {str(e)[:80]}")
-                        continue
+                        logger.error(str(e), download.name)
+                        not_found_items.append(download.name[:50])
 
                 await session.commit()
 
-                # Progress display
-                total_items = downloading_without + completed_without + queued_without
-                found_so_far = total_items - (downloading_without + completed_without + queued_without - found_count)
-                print(f"  ✓ Found {found_count}/{len(downloads_without_info)} • Progress: {found_so_far}/{total_items} posters")
+                # Calculate total progress
+                # Count ALL items with posters now
+                all_with_posters = await session.execute(
+                    select(Download).where(Download.poster_url != None)
+                )
+                total_found = len(all_with_posters.scalars().all())
+
+                # Total needed = all downloads
+                all_downloads = await session.execute(select(Download))
+                total_needed = len(all_downloads.scalars().all())
+
+                # Log results
+                logger.poster_fetch_results(found_items, not_found_items, total_found, total_needed)
 
         except Exception as e:
-            print(f"[{datetime.now().strftime('%H:%M:%S')}] ❌ Error fetching media info: {e}")
+            print(f"{logger.timestamp()} ❌ Error fetching media info: {e}")
 
     async def update_priority(self, download_id: str, priority: str) -> bool:
         """Update download priority in SABnzbd."""

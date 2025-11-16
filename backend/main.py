@@ -11,6 +11,7 @@ import uvicorn
 from backend.database import db, Download
 from backend.sync_service import SyncService
 from backend.config import get_config
+from backend.logger import logger
 
 
 # Pydantic models for API
@@ -66,20 +67,20 @@ async def lifespan(app: FastAPI):
     # Initialize database
     try:
         await db.init_db()
-        print("✅ Database initialized")
     except Exception as e:
         print(f"❌ ERROR initializing database: {e}")
         raise
 
+    # Show startup banner
+    logger.startup_banner(config)
+
     # Initial sync (fast - skip media info to avoid blocking startup)
-    print("🔄 Attempting initial sync with SABnzbd (fast mode)...")
     try:
-        await sync_service.sync_downloads(fetch_media_info=False)
-        print("✅ Initial sync successful (posters will load in background)")
+        await sync_service.sync_downloads(fetch_media_info=False, is_initial=True)
     except Exception as e:
-        print(f"⚠️  Initial sync failed: {e}")
-        print("⚠️  Will retry automatically every 5 seconds...")
-        print("⚠️  Please check your config.yml and ensure SABnzbd is running")
+        print(f"{logger.timestamp()} ⚠️  Initial sync failed: {e}")
+        print("           └─ Will retry automatically every 5 seconds...")
+        print()
 
     # Define async wrapper functions for scheduler
     async def sync_job():
@@ -122,21 +123,16 @@ async def lifespan(app: FastAPI):
     )
     scheduler.start()
 
-    print("")
-    print("════════════════════════════════════════════════════════════")
-    print("  ✅ SABnzbd Media Tracker Backend Started")
-    print("════════════════════════════════════════════════════════════")
-    print(f"  📊 Real-time sync: Every 5 seconds (fast)")
-    print(f"  🖼️  Poster fetch: Every 10 seconds (20 items at a time)")
-    print(f"  🧹 Cleanup: Every {config.cleanup.check_interval_minutes} minutes")
-    print(f"  🗑️  Auto-remove completed after {config.cleanup.completed_after_hours}h")
-    print("════════════════════════════════════════════════════════════")
-    print("")
+    logger.separator()
+    print(f"  Backend ready at http://{config.server.host}:{config.server.port}")
+    print(f"  Frontend will start shortly...")
+    logger.separator()
+    print()
 
     yield
 
     # Shutdown
-    print("🛑 Shutting down...")
+    print(f"\n{logger.timestamp()} 🛑 Shutting down gracefully...")
     scheduler.shutdown()
 
 
