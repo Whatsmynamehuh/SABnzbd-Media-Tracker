@@ -125,15 +125,14 @@ class SyncService:
         """Fetch media info for downloads that don't have it yet (batched, prioritized)."""
         try:
             async for session in db.get_session():
-                # Count total active items without posters
-                active_result = await session.execute(
+                # Count items without posters in each category
+                downloading_result = await session.execute(
                     select(Download)
                     .where(Download.poster_url == None)
-                    .where(Download.status.in_(['downloading', 'queued']))
+                    .where(Download.status == 'downloading')
                 )
-                active_without = len(active_result.scalars().all())
+                downloading_without = len(downloading_result.scalars().all())
 
-                # Count total completed items without posters
                 completed_result = await session.execute(
                     select(Download)
                     .where(Download.poster_url == None)
@@ -141,30 +140,37 @@ class SyncService:
                 )
                 completed_without = len(completed_result.scalars().all())
 
-                total_without = active_without + completed_without
+                queued_result = await session.execute(
+                    select(Download)
+                    .where(Download.poster_url == None)
+                    .where(Download.status == 'queued')
+                )
+                queued_without = len(queued_result.scalars().all())
+
+                total_without = downloading_without + completed_without + queued_without
 
                 if total_without == 0:
                     return
 
-                # Priority 1: Downloading items first
-                # Priority 2: Queued items (ordered by queue position #1, #2, #3...)
-                # Priority 3: Completed items (after queue is done)
-                if active_without > 0:
-                    # Fetch active/queued items first, ordered by position
+                # PRIORITY ORDER:
+                # 1. Downloading (#1) - most important, what's downloading NOW
+                # 2. Recently completed - what just finished
+                # 3. Queued (#2, #3, #4...) - fill in queue posters last
+
+                if downloading_without > 0:
+                    # Priority 1: Currently downloading item
                     result = await session.execute(
                         select(Download)
                         .where(Download.poster_url == None)
-                        .where(Download.status.in_(['downloading', 'queued']))
-                        .order_by(
-                            Download.status.desc(),  # downloading before queued
-                            Download.queue_position.asc()  # then by position #1, #2, #3...
-                        )
+                        .where(Download.status == 'downloading')
                         .limit(20)
                     )
                     downloads_without_info = result.scalars().all()
-                    fetch_type = "queue"
-                else:
-                    # All queue items have posters, now fetch completed items
+                    fetch_type = "downloading"
+                    print(f"[{datetime.now().strftime('%H:%M:%S')}] 🖼️  Fetching poster for downloading item... ({completed_without} completed + {queued_without} queued remaining)")
+
+                elif completed_without > 0:
+                    # Priority 2: Recently completed items (newest first)
                     result = await session.execute(
                         select(Download)
                         .where(Download.poster_url == None)
@@ -174,14 +180,26 @@ class SyncService:
                     )
                     downloads_without_info = result.scalars().all()
                     fetch_type = "completed"
+                    print(f"[{datetime.now().strftime('%H:%M:%S')}] 🖼️  Fetching posters for completed items... ({completed_without} completed + {queued_without} queued remaining)")
+
+                elif queued_without > 0:
+                    # Priority 3: Queued items (by position #2, #3, #4...)
+                    result = await session.execute(
+                        select(Download)
+                        .where(Download.poster_url == None)
+                        .where(Download.status == 'queued')
+                        .order_by(Download.queue_position.asc())  # #2, #3, #4...
+                        .limit(20)
+                    )
+                    downloads_without_info = result.scalars().all()
+                    fetch_type = "queued"
+                    print(f"[{datetime.now().strftime('%H:%M:%S')}] 🖼️  Fetching posters for queue (by position)... ({queued_without} remaining)")
+
+                else:
+                    return
 
                 if not downloads_without_info:
                     return
-
-                if fetch_type == "queue":
-                    print(f"[{datetime.now().strftime('%H:%M:%S')}] 🖼️  Fetching posters for queue (priority order)... ({active_without} active + {completed_without} completed remaining)")
-                else:
-                    print(f"[{datetime.now().strftime('%H:%M:%S')}] 🖼️  Queue done! Fetching posters for completed items... ({completed_without} remaining)")
 
                 found_count = 0
                 for download in downloads_without_info:
@@ -200,14 +218,10 @@ class SyncService:
 
                 await session.commit()
 
-                # Calculate totals for progress display
-                if fetch_type == "queue":
-                    total_items = active_without + completed_without
-                    found_so_far = total_items - (active_without - found_count) - completed_without
-                    print(f"  ✓ Found {found_count}/{len(downloads_without_info)} • Progress: {found_so_far}/{total_items} posters")
-                else:
-                    remaining = completed_without - found_count
-                    print(f"  ✓ Found {found_count}/{len(downloads_without_info)} • {remaining} completed items still need posters")
+                # Progress display
+                total_items = downloading_without + completed_without + queued_without
+                found_so_far = total_items - (downloading_without + completed_without + queued_without - found_count)
+                print(f"  ✓ Found {found_count}/{len(downloads_without_info)} • Progress: {found_so_far}/{total_items} posters")
 
         except Exception as e:
             print(f"[{datetime.now().strftime('%H:%M:%S')}] ❌ Error fetching media info: {e}")
