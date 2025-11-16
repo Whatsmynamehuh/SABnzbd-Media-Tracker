@@ -50,7 +50,14 @@ export default function DownloadSection({ downloads, section, isLoading }) {
   }
 
   return (
-    <div className="overflow-x-auto scrollbar-hide">
+    <div
+      className="overflow-x-auto scrollbar-hide"
+      style={{
+        WebkitOverflowScrolling: 'touch',
+        touchAction: 'pan-x',
+        scrollBehavior: 'smooth'
+      }}
+    >
       <div className="flex gap-6 pb-6" style={{ minWidth: 'min-content' }}>
         {downloads.map(download => (
           <DownloadCard key={download.id} download={download} section={section} />

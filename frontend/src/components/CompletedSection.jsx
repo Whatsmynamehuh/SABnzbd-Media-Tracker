@@ -81,7 +81,14 @@ export default function CompletedSection({ downloads }) {
         <p className="text-sm text-gray-500">Auto-cleanup after 48 hours</p>
       </div>
 
-      <div className="flex gap-3 overflow-x-auto pb-4 scrollbar-hide">
+      <div
+        className="flex gap-3 overflow-x-auto pb-4 scrollbar-hide"
+        style={{
+          WebkitOverflowScrolling: 'touch',
+          touchAction: 'pan-x',
+          scrollBehavior: 'smooth'
+        }}
+      >
         {downloads.map((download) => (
           <CompletedItem key={download.id} download={download} />
         ))}

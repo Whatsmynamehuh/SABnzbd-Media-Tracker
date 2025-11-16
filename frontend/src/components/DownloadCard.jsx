@@ -146,23 +146,27 @@ export default function DownloadCard({ download, section }) {
 
         {/* Priority (for queued items) */}
         {section === 'queued' && (
-          <div className="relative mb-4">
+          <div className="mb-4">
             <button
-              onClick={() => setShowPriority(!showPriority)}
+              onClick={(e) => {
+                e.stopPropagation()
+                setShowPriority(!showPriority)
+              }}
               className="w-full px-4 py-3 bg-gradient-to-r from-blue-500/20 to-cyan-500/20 hover:from-blue-500/30 hover:to-cyan-500/30 rounded-xl text-sm font-bold transition-all border border-blue-500/30 hover:border-blue-500/50 flex items-center justify-between"
             >
               <span className="text-white">Priority: {download.priority || 'Normal'}</span>
-              <span className="text-blue-400">{showPriority ? '▲' : '▼'}</span>
+              <span className="text-blue-400">⚙️</span>
             </button>
-
-            {showPriority && (
-              <PrioritySelector
-                currentPriority={download.priority}
-                onSelect={handlePriorityChange}
-                onClose={() => setShowPriority(false)}
-              />
-            )}
           </div>
+        )}
+
+        {/* Priority Modal (rendered at top level) */}
+        {showPriority && (
+          <PrioritySelector
+            currentPriority={download.priority}
+            onSelect={handlePriorityChange}
+            onClose={() => setShowPriority(false)}
+          />
         )}
 
         {/* Failed reason */}

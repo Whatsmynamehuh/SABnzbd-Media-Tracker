@@ -29,7 +29,14 @@ export default function Navigation({ activeSection, setActiveSection, stats }) {
   return (
     <nav className="relative backdrop-blur-xl bg-white/5 border-b border-white/10 sticky top-[89px] z-40">
       <div className="container mx-auto px-6">
-        <div className="flex gap-4 overflow-x-auto scrollbar-hide py-6">
+        <div
+          className="flex gap-4 overflow-x-auto scrollbar-hide py-6"
+          style={{
+            WebkitOverflowScrolling: 'touch',
+            touchAction: 'pan-x',
+            scrollBehavior: 'smooth'
+          }}
+        >
           {sections.map(section => {
             const isActive = activeSection === section.id
 

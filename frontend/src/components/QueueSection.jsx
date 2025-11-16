@@ -40,25 +40,16 @@ function QueueItem({ download, position }) {
   }
 
   return (
-    <div
-      onClick={() => setShowPrioritySelector(!showPrioritySelector)}
-      className={`group relative flex-shrink-0 w-48 cursor-pointer transition-all duration-300 ${
-        isToggling ? 'scale-95' : 'hover:scale-105'
-      } ${isHighPriority ? 'order-0' : 'order-1'}`}
-    >
-      {/* Priority Selector */}
-      {showPrioritySelector && (
-        <div
-          className="absolute z-50 bottom-full mb-2 left-0 right-0"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <PrioritySelector
-            currentPriority={download.priority}
-            onSelect={handlePrioritySelect}
-            onClose={() => setShowPrioritySelector(false)}
-          />
-        </div>
-      )}
+    <>
+      <div
+        onClick={(e) => {
+          e.stopPropagation()
+          setShowPrioritySelector(!showPrioritySelector)
+        }}
+        className={`group relative flex-shrink-0 w-48 cursor-pointer transition-all duration-300 ${
+          isToggling ? 'scale-95' : 'hover:scale-105'
+        } ${isHighPriority ? 'order-0' : 'order-1'}`}
+      >
 
       {/* Poster */}
       <div className={`relative rounded-xl overflow-hidden ${
@@ -125,6 +116,16 @@ function QueueItem({ download, position }) {
         </div>
       </div>
     </div>
+
+    {/* Priority Modal (rendered at top level) */}
+    {showPrioritySelector && (
+      <PrioritySelector
+        currentPriority={download.priority}
+        onSelect={handlePrioritySelect}
+        onClose={() => setShowPrioritySelector(false)}
+      />
+    )}
+    </>
   )
 }
 
@@ -153,7 +154,14 @@ export default function QueueSection({ downloads }) {
         <p className="text-sm text-gray-500">Click to change priority • Force / High / Normal</p>
       </div>
 
-      <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+      <div
+        className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide"
+        style={{
+          WebkitOverflowScrolling: 'touch',
+          touchAction: 'pan-x',
+          scrollBehavior: 'smooth'
+        }}
+      >
         {downloads.map((download) => (
           <QueueItem
             key={download.id}
