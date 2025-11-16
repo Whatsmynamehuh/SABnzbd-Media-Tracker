@@ -138,29 +138,19 @@ function QueueItem({ download, position }) {
 export default function QueueSection({ downloads }) {
   const scrollContainerRef = useRef(null)
 
-  // Enable horizontal scrolling with mouse wheel on desktop (Shift + Scroll)
+  // Enable horizontal scrolling with Shift+Scroll on desktop only
   useEffect(() => {
     const scrollContainer = scrollContainerRef.current
     if (!scrollContainer) return
 
     const handleWheel = (e) => {
-      // Only handle horizontal scrolling if there's content to scroll
       const hasHorizontalScroll = scrollContainer.scrollWidth > scrollContainer.clientWidth
 
-      if (hasHorizontalScroll) {
-        // Use Shift+Scroll for horizontal scrolling, or convert vertical to horizontal
-        // if there's a clear horizontal scroll intent (low vertical delta)
-        const isShiftScroll = e.shiftKey
-        const isHorizontalIntent = Math.abs(e.deltaX) > Math.abs(e.deltaY)
-
-        if (isShiftScroll || isHorizontalIntent) {
-          e.preventDefault()
-          scrollContainer.scrollLeft += e.shiftKey ? e.deltaY : e.deltaX
-        } else if (Math.abs(e.deltaY) < 50 && Math.abs(e.deltaX) === 0) {
-          // Small vertical scrolls convert to horizontal (gentle nudge)
-          e.preventDefault()
-          scrollContainer.scrollLeft += e.deltaY
-        }
+      // ONLY intercept if user holds Shift key (clear horizontal intent)
+      // Otherwise let page scroll naturally
+      if (hasHorizontalScroll && e.shiftKey) {
+        e.preventDefault()
+        scrollContainer.scrollLeft += e.deltaY
       }
     }
 
@@ -196,12 +186,9 @@ export default function QueueSection({ downloads }) {
 
       <div
         ref={scrollContainerRef}
-        className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide touch-pan-x"
+        className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide"
         style={{
           WebkitOverflowScrolling: 'touch',
-          touchAction: 'pan-x pinch-zoom',
-          overscrollBehaviorX: 'contain',
-          overscrollBehaviorY: 'none',
           scrollBehavior: 'smooth'
         }}
       >
