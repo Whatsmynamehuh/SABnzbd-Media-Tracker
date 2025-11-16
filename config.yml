@@ -2,8 +2,8 @@
 # Copy this file to config.yml and fill in your details
 
 sabnzbd:
-  url: "http://localhost:8080"
-  api_key: "your_sabnzbd_api_key"
+  url: "http://192.168.50.237:8086"
+  api_key: "YOUR_API_KEY_HERE"  # ← I need your SABnzbd API key!
 
 # Configure your Radarr instances (movies)
 # IMPORTANT: The 'category' must match what you configured in Radarr's download client settings!
