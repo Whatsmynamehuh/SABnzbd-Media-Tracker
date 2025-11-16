@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 
 export default function PrioritySelector({ currentPriority, onSelect, onClose }) {
   const modalRef = useRef()
@@ -41,7 +42,8 @@ export default function PrioritySelector({ currentPriority, onSelect, onClose })
     }
   }, [onClose])
 
-  return (
+  // Render modal using Portal to ensure it's always on top (bypasses parent stacking contexts)
+  return createPortal(
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
       <div
         ref={modalRef}
@@ -95,6 +97,7 @@ export default function PrioritySelector({ currentPriority, onSelect, onClose })
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }

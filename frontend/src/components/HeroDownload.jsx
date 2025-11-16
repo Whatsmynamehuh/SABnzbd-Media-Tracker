@@ -122,18 +122,13 @@ export default function HeroDownload({ download, isLoading }) {
 
           {/* Details */}
           <div className="flex-1 flex flex-col justify-center space-y-6 relative">
-            {/* Priority Selector */}
+            {/* Priority Selector Modal (rendered via Portal) */}
             {showPrioritySelector && (
-              <div
-                className="absolute top-0 right-0 z-50"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <PrioritySelector
-                  currentPriority={download.priority}
-                  onSelect={handlePrioritySelect}
-                  onClose={() => setShowPrioritySelector(false)}
-                />
-              </div>
+              <PrioritySelector
+                currentPriority={download.priority}
+                onSelect={handlePrioritySelect}
+                onClose={() => setShowPrioritySelector(false)}
+              />
             )}
 
             {/* Title */}
