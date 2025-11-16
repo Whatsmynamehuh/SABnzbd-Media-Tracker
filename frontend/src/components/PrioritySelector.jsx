@@ -4,11 +4,9 @@ export default function PrioritySelector({ currentPriority, onSelect, onClose })
   const ref = useRef()
 
   const priorities = [
-    { value: 'force', label: 'Force', color: 'text-red-400', icon: '⚡' },
-    { value: 'high', label: 'High', color: 'text-orange-400', icon: '🔥' },
-    { value: 'normal', label: 'Normal', color: 'text-blue-400', icon: '➡️' },
-    { value: 'low', label: 'Low', color: 'text-gray-400', icon: '⬇️' },
-    { value: 'paused', label: 'Paused', color: 'text-gray-500', icon: '⏸️' },
+    { value: 'force', label: 'Force', color: 'text-red-400', bgColor: 'bg-red-500', icon: '⚡' },
+    { value: 'high', label: 'High', color: 'text-orange-400', bgColor: 'bg-orange-500', icon: '🔥' },
+    { value: 'normal', label: 'Normal', color: 'text-blue-400', bgColor: 'bg-blue-500', icon: '➡️' },
   ]
 
   useEffect(() => {

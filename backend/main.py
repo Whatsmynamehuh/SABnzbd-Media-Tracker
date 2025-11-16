@@ -19,6 +19,7 @@ class DownloadResponse(BaseModel):
     id: str
     name: str
     status: str
+    detailed_status: str | None  # Actual SABnzbd status (Downloading, Extracting, etc.)
     progress: float
     size_total: float | None
     size_left: float | None
@@ -169,6 +170,7 @@ async def get_all_downloads(session: AsyncSession = Depends(get_db_session)):
             id=d.id,
             name=d.name,
             status=d.status,
+            detailed_status=d.detailed_status,
             progress=d.progress or 0.0,
             size_total=d.size_total,
             size_left=d.size_left,

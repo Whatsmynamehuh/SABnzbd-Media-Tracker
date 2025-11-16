@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import axios from 'axios'
+import PrioritySelector from './PrioritySelector'
 
 function QueueItem({ download, position }) {
   const [isToggling, setIsToggling] = useState(false)
-  const isHigh = download.priority?.toLowerCase() === 'high' || download.priority === '2'
+  const [showPrioritySelector, setShowPrioritySelector] = useState(false)
 
   const formatSize = (mb) => {
     if (!mb) return 'N/A'
@@ -11,27 +12,54 @@ function QueueItem({ download, position }) {
     return `${mb.toFixed(2)} MB`
   }
 
-  const togglePriority = async () => {
+  // Map SABnzbd priority values to labels
+  const getPriorityInfo = (priority) => {
+    const priorityMap = {
+      '3': { label: 'FORCE', color: 'bg-red-500', ring: 'ring-red-500', icon: '⚡' },
+      'force': { label: 'FORCE', color: 'bg-red-500', ring: 'ring-red-500', icon: '⚡' },
+      '2': { label: 'HIGH', color: 'bg-orange-500', ring: 'ring-orange-500', icon: '🔥' },
+      'high': { label: 'HIGH', color: 'bg-orange-500', ring: 'ring-orange-500', icon: '🔥' },
+      '1': { label: 'NORMAL', color: 'bg-gray-800/70', ring: '', icon: '➡️' },
+      'normal': { label: 'NORMAL', color: 'bg-gray-800/70', ring: '', icon: '➡️' },
+    }
+    return priorityMap[priority?.toLowerCase()] || priorityMap['normal']
+  }
+
+  const priorityInfo = getPriorityInfo(download.priority)
+  const isHighPriority = priorityInfo.label === 'FORCE' || priorityInfo.label === 'HIGH'
+
+  const handlePrioritySelect = async (newPriority) => {
     setIsToggling(true)
+    setShowPrioritySelector(false)
     try {
-      const newPriority = isHigh ? 'normal' : 'high'
       await axios.post(`/api/downloads/${download.id}/priority`, { priority: newPriority })
     } catch (error) {
-      console.error('Failed to toggle priority:', error)
+      console.error('Failed to update priority:', error)
     }
     setTimeout(() => setIsToggling(false), 300)
   }
 
   return (
     <div
-      onClick={togglePriority}
+      onClick={() => setShowPrioritySelector(!showPrioritySelector)}
       className={`group relative flex-shrink-0 w-48 cursor-pointer transition-all duration-300 ${
         isToggling ? 'scale-95' : 'hover:scale-105'
-      } ${isHigh ? 'order-0' : 'order-1'}`}
+      } ${isHighPriority ? 'order-0' : 'order-1'}`}
     >
+      {/* Priority Selector */}
+      {showPrioritySelector && (
+        <div className="absolute z-50 bottom-full mb-2 left-0 right-0">
+          <PrioritySelector
+            currentPriority={download.priority}
+            onSelect={handlePrioritySelect}
+            onClose={() => setShowPrioritySelector(false)}
+          />
+        </div>
+      )}
+
       {/* Poster */}
       <div className={`relative rounded-xl overflow-hidden ${
-        isHigh ? 'ring-2 ring-blue-500 shadow-lg shadow-blue-500/50' : ''
+        priorityInfo.ring ? `ring-2 ${priorityInfo.ring} shadow-lg ${priorityInfo.ring.replace('ring-', 'shadow-')}/50` : ''
       }`}>
         <div className="relative w-48 h-72 bg-gray-900">
           {download.poster_url ? (
@@ -57,12 +85,9 @@ function QueueItem({ download, position }) {
           </div>
 
           {/* Priority Badge */}
-          <div className={`absolute top-2 right-2 px-3 py-1 rounded-lg font-bold text-xs ${
-            isHigh
-              ? 'bg-blue-500 text-white shadow-lg'
-              : 'bg-gray-800/70 text-gray-400'
-          }`}>
-            {isHigh ? '⭐ HIGH' : 'DEFAULT'}
+          <div className={`absolute top-2 right-2 px-3 py-1 rounded-lg font-bold text-xs text-white shadow-lg flex items-center gap-1 ${priorityInfo.color}`}>
+            <span>{priorityInfo.icon}</span>
+            <span>{priorityInfo.label}</span>
           </div>
 
           {/* Info Overlay */}
@@ -86,7 +111,7 @@ function QueueItem({ download, position }) {
         {/* Hover hint */}
         <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
           <p className="text-white font-bold text-sm">
-            {isHigh ? 'Set to Default' : 'Set to High Priority'}
+            Click to Change Priority
           </p>
         </div>
       </div>
@@ -116,7 +141,7 @@ export default function QueueSection({ downloads }) {
         <h2 className="text-2xl font-bold text-white">
           Queue <span className="text-gray-600">({downloads.length})</span>
         </h2>
-        <p className="text-sm text-gray-500">Click to toggle priority</p>
+        <p className="text-sm text-gray-500">Click to change priority • Force / High / Normal</p>
       </div>
 
       <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">

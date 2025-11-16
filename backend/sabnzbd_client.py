@@ -109,6 +109,7 @@ class SABnzbdClient:
                 "id": slot.get("nzo_id"),
                 "name": slot.get("filename"),
                 "status": item_status,
+                "detailed_status": status,  # Actual SABnzbd status (Downloading, Extracting, etc.)
                 "progress": float(slot.get("percentage", 0)),
                 "size_total": float(slot.get("mb", 0)),
                 "size_left": float(slot.get("mbleft", 0)),

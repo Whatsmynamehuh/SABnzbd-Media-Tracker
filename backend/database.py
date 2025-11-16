@@ -13,6 +13,7 @@ class Download(Base):
     id = Column(String, primary_key=True)  # SABnzbd NZO ID
     name = Column(String, nullable=False)
     status = Column(String, nullable=False)  # downloading, queued, completed, failed
+    detailed_status = Column(String, nullable=True)  # Actual SABnzbd status (Downloading, Extracting, Verifying, etc.)
     progress = Column(Float, default=0.0)  # 0-100
     size_total = Column(Float, nullable=True)  # in MB
     size_left = Column(Float, nullable=True)  # in MB
