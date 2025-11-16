@@ -80,13 +80,31 @@ async def lifespan(app: FastAPI):
         print("⚠️  Will retry automatically every 5 seconds...")
         print("⚠️  Please check your config.yml and ensure SABnzbd is running")
 
-    # Schedule periodic syncs
-    scheduler.add_job(sync_service.sync_downloads, 'interval', seconds=5, id='sync_downloads')
+    # Schedule periodic syncs (fast - no media info)
+    scheduler.add_job(
+        lambda: sync_service.sync_downloads(fetch_media_info=False),
+        'interval',
+        seconds=5,
+        id='sync_downloads',
+        max_instances=1
+    )
+
+    # Schedule media info fetch (slower, batched)
+    scheduler.add_job(
+        sync_service.fetch_missing_media_info,
+        'interval',
+        seconds=15,
+        id='fetch_media_info',
+        max_instances=1
+    )
+
+    # Schedule cleanup
     scheduler.add_job(
         sync_service.cleanup_completed,
         'interval',
         minutes=config.cleanup.check_interval_minutes,
-        id='cleanup_completed'
+        id='cleanup_completed',
+        max_instances=1
     )
     scheduler.start()
 
@@ -94,7 +112,8 @@ async def lifespan(app: FastAPI):
     print("════════════════════════════════════════════════════════════")
     print("  ✅ SABnzbd Media Tracker Backend Started")
     print("════════════════════════════════════════════════════════════")
-    print(f"  📊 Real-time sync: Every 5 seconds")
+    print(f"  📊 Real-time sync: Every 5 seconds (fast)")
+    print(f"  🖼️  Poster fetch: Every 15 seconds (10 items at a time)")
     print(f"  🧹 Cleanup: Every {config.cleanup.check_interval_minutes} minutes")
     print(f"  🗑️  Auto-remove completed after {config.cleanup.completed_after_hours}h")
     print("════════════════════════════════════════════════════════════")

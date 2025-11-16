@@ -67,15 +67,9 @@ class SyncService:
 
             download.updated_at = datetime.utcnow()
 
-            # Fetch media info if missing and requested
-            if fetch_media_info and not download.poster_url:
-                media_info = await self.arr_manager.search_all(item["name"])
-                if media_info:
-                    download.media_type = media_info.get("media_type")
-                    download.media_title = media_info.get("media_title")
-                    download.poster_url = media_info.get("poster_url")
-                    download.year = media_info.get("year")
-                    download.arr_instance = media_info.get("arr_instance")
+            # Don't fetch media info for existing items during regular sync
+            # A separate background job will handle this
+            pass
         else:
             # Create new
             download = Download(id=item["id"])
@@ -83,16 +77,7 @@ class SyncService:
                 if hasattr(download, key):
                     setattr(download, key, value)
 
-            # Try to get media info from Radarr/Sonarr (only if requested)
-            if fetch_media_info:
-                media_info = await self.arr_manager.search_all(item["name"])
-                if media_info:
-                    download.media_type = media_info.get("media_type")
-                    download.media_title = media_info.get("media_title")
-                    download.poster_url = media_info.get("poster_url")
-                    download.year = media_info.get("year")
-                    download.arr_instance = media_info.get("arr_instance")
-
+            # Mark for media info fetch (will be done by background job)
             session.add(download)
 
     async def cleanup_completed(self):
@@ -128,6 +113,43 @@ class SyncService:
             select(Download).where(Download.status == status)
         )
         return result.scalars().all()
+
+    async def fetch_missing_media_info(self):
+        """Fetch media info for downloads that don't have it yet (batched)."""
+        try:
+            async for session in db.get_session():
+                # Get up to 10 items without posters
+                result = await session.execute(
+                    select(Download)
+                    .where(Download.poster_url == None)
+                    .where(Download.status.in_(['downloading', 'queued']))
+                    .limit(10)
+                )
+                downloads_without_info = result.scalars().all()
+
+                if not downloads_without_info:
+                    return
+
+                print(f"[{datetime.now().strftime('%H:%M:%S')}] 🖼️  Fetching media info for {len(downloads_without_info)} items...")
+
+                for download in downloads_without_info:
+                    try:
+                        media_info = await self.arr_manager.search_all(download.name)
+                        if media_info:
+                            download.media_type = media_info.get("media_type")
+                            download.media_title = media_info.get("media_title")
+                            download.poster_url = media_info.get("poster_url")
+                            download.year = media_info.get("year")
+                            download.arr_instance = media_info.get("arr_instance")
+                            print(f"  ✓ Found: {media_info.get('media_title')} ({media_info.get('year')})")
+                    except Exception as e:
+                        print(f"  ✗ Error fetching media info for {download.name}: {e}")
+                        continue
+
+                await session.commit()
+
+        except Exception as e:
+            print(f"[{datetime.now().strftime('%H:%M:%S')}] ❌ Error fetching media info: {e}")
 
     async def update_priority(self, download_id: str, priority: str) -> bool:
         """Update download priority in SABnzbd."""
