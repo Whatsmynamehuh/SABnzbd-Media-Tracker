@@ -80,9 +80,22 @@ async def lifespan(app: FastAPI):
         print("⚠️  Will retry automatically every 5 seconds...")
         print("⚠️  Please check your config.yml and ensure SABnzbd is running")
 
+    # Define async wrapper functions for scheduler
+    async def sync_job():
+        """Fast sync job - updates download status without fetching posters."""
+        await sync_service.sync_downloads(fetch_media_info=False)
+
+    async def poster_job():
+        """Poster fetch job - gradually fetches missing posters."""
+        await sync_service.fetch_missing_media_info()
+
+    async def cleanup_job():
+        """Cleanup job - removes old completed downloads."""
+        await sync_service.cleanup_completed()
+
     # Schedule periodic syncs (fast - no media info)
     scheduler.add_job(
-        lambda: sync_service.sync_downloads(fetch_media_info=False),
+        sync_job,
         'interval',
         seconds=5,
         id='sync_downloads',
@@ -91,16 +104,16 @@ async def lifespan(app: FastAPI):
 
     # Schedule media info fetch (slower, batched)
     scheduler.add_job(
-        sync_service.fetch_missing_media_info,
+        poster_job,
         'interval',
-        seconds=15,
+        seconds=10,
         id='fetch_media_info',
         max_instances=1
     )
 
     # Schedule cleanup
     scheduler.add_job(
-        sync_service.cleanup_completed,
+        cleanup_job,
         'interval',
         minutes=config.cleanup.check_interval_minutes,
         id='cleanup_completed',
