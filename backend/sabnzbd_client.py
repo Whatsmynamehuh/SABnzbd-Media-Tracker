@@ -81,18 +81,22 @@ class SABnzbdClient:
 
         queue = queue_data["queue"]
         slots = queue.get("slots", [])
+        queue_paused = queue.get("paused", False)
 
         for position, slot in enumerate(slots, start=1):
             # Determine status
             status = slot.get("status", "")
-            if status in ["Downloading", "Fetching"]:
-                item_status = "downloading"
-            elif status in ["Queued"]:
-                item_status = "queued"
-            elif status in ["Paused"]:
+
+            # CRITICAL: SABnzbd can only download ONE item at a time
+            # Position #1 is the active download, everything else is queued
+            if status in ["Paused"] or queue_paused:
                 item_status = "paused"
+            elif position == 1 and status in ["Downloading", "Fetching"]:
+                # Only the first item can be actively downloading
+                item_status = "downloading"
             else:
-                item_status = status.lower()
+                # Everything else is queued (positions 2, 3, 4...)
+                item_status = "queued"
 
             items.append({
                 "id": slot.get("nzo_id"),
