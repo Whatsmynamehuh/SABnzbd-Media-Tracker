@@ -162,6 +162,35 @@ class ArrClient:
         title = re.sub(r'[._-]', ' ', title)  # Replace separators with spaces
         title = re.sub(r'[^\w\s]', '', title)  # Remove all punctuation (!, :, etc)
         title = re.sub(r'\s+', ' ', title).strip().lower()  # Normalize spaces
+
+        # Normalize common abbreviations (case-insensitive)
+        abbreviations = {
+            r'\bdr\b': 'doctor',
+            r'\bmr\b': 'mister',
+            r'\bmrs\b': 'missus',
+            r'\bst\b': 'saint',
+            r'\bpt\b': 'part',
+        }
+        for abbr, full in abbreviations.items():
+            title = re.sub(abbr, full, title)
+
+        # Convert roman numerals to arabic numbers (I-X for sequels)
+        # Order matters! Check longer patterns first (VIII before III before II before I)
+        roman_map = [
+            (r'\bviii\b', '8'),
+            (r'\bvii\b', '7'),
+            (r'\bvi\b', '6'),
+            (r'\bix\b', '9'),
+            (r'\biv\b', '4'),
+            (r'\bv\b', '5'),
+            (r'\biii\b', '3'),
+            (r'\bii\b', '2'),
+            (r'\bx\b', '10'),
+            (r'\bi\b', '1'),
+        ]
+        for roman, arabic in roman_map:
+            title = re.sub(roman, arabic, title)
+
         return title
 
     def _format_item(self, item: Dict[str, Any]) -> Dict[str, Any]:
