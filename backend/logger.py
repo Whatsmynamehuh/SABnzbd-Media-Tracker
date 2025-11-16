@@ -32,7 +32,7 @@ class Logger:
 
     def separator(self, width: int = 80) -> None:
         """Print a separator line."""
-        print("═" * width)
+        print("-" * width)
 
     def progress_bar(self, current: int, total: int, width: int = 30, fill: str = "█", empty: str = "░") -> str:
         """Generate ASCII progress bar."""
@@ -46,50 +46,32 @@ class Logger:
 
     def startup_banner(self, config) -> None:
         """Print startup banner with connection info."""
-        self.draw_box("SABnzbd Media Tracker v1.0 - STARTED")
+        print("=" * 80)
+        print("SABnzbd Media Tracker v1.0 - STARTED")
+        print("=" * 80)
         print()
+        print(f"{self.timestamp()} Connected to SABnzbd: {config.sabnzbd.url}")
 
-        # SABnzbd connection
-        print(f"{self.timestamp()} 📡 Testing Connections...")
-        print(f"           ├─ ✅ SABnzbd:           {config.sabnzbd.url}")
-
-        # Radarr instances
         for radarr in config.radarr:
-            print(f"           ├─ ✅ Radarr ({radarr.name})")
+            print(f"{self.timestamp()} Connected to Radarr: {radarr.name}")
 
-        # Sonarr instances
-        for i, sonarr in enumerate(config.sonarr):
-            if i == len(config.sonarr) - 1 and len(config.radarr) == 0:
-                print(f"           └─ ✅ Sonarr ({sonarr.name})")
-            else:
-                print(f"           ├─ ✅ Sonarr ({sonarr.name})")
-
-        if len(config.radarr) > 0:
-            print(f"           └─ ✅ {len(config.radarr)} Radarr + {len(config.sonarr)} Sonarr instances ready")
+        for sonarr in config.sonarr:
+            print(f"{self.timestamp()} Connected to Sonarr: {sonarr.name}")
 
         print()
-        print(f"{self.timestamp()} ⚙️  Configuration")
-        print(f"           ├─ Sync Interval:     5s (fast mode, changes only)")
-        print(f"           ├─ Poster Fetch:      10s (20 items/batch)")
-        print(f"           ├─ Cleanup:           Every {config.cleanup.check_interval_minutes}min ({config.cleanup.completed_after_hours}h retention)")
-        print(f"           └─ Priority Order:    Downloading → Completed → Queue")
+        print(f"{self.timestamp()} Sync Interval: 5s | Poster Fetch: 10s | Cleanup: {config.cleanup.completed_after_hours}h retention")
         print()
 
     def initial_sync(self, downloading: int, queued: int, completed: int, active_download: Optional[Dict] = None) -> None:
         """Log initial sync results."""
         total = downloading + queued + completed
-        print(f"{self.timestamp()} 🔄 Initial Sync Complete")
 
         if active_download:
             name = active_download.get('media_title') or active_download.get('name', 'Unknown')
             progress = active_download.get('progress', 0)
-            print(f"           ├─ Downloading: {downloading}  ({name} - {progress:.1f}%)")
+            print(f"{self.timestamp()} Initial sync complete - Downloading: {downloading} ({name} - {progress:.1f}%), Queued: {queued}, Completed: {completed}, Total: {total}")
         else:
-            print(f"           ├─ Downloading: {downloading}")
-
-        print(f"           ├─ Queued:      {queued}")
-        print(f"           ├─ Completed:   {completed}")
-        print(f"           └─ Total:       {total} items")
+            print(f"{self.timestamp()} Initial sync complete - Downloading: {downloading}, Queued: {queued}, Completed: {completed}, Total: {total}")
         print()
 
         # Store state
@@ -111,15 +93,10 @@ class Logger:
 
         # Only log if something changed
         if self.last_sync_state and current_state != self.last_sync_state:
-            print(f"{self.timestamp()} 📊 Queue Update")
-
             if change_desc:
-                print(f"           ├─ {change_desc}")
-
-            print(f"           ├─ Downloading: {downloading}")
-            print(f"           ├─ Queued:      {queued}")
-            print(f"           └─ Completed:   {completed}")
-            print()
+                print(f"{self.timestamp()} Queue update - {change_desc} - Downloading: {downloading}, Queued: {queued}, Completed: {completed}")
+            else:
+                print(f"{self.timestamp()} Queue update - Downloading: {downloading}, Queued: {queued}, Completed: {completed}")
 
             self.last_sync_state = current_state
 
@@ -324,15 +301,13 @@ class Logger:
 
     def cleanup_start(self, total_items: int) -> None:
         """Log cleanup job start."""
-        print(f"{self.timestamp()} 🧹 Cleanup Job Running...")
-        print(f"           ├─ Checking {total_items} completed items")
+        print(f"{self.timestamp()} Cleanup: Checking {total_items} completed items")
 
-    def cleanup_complete(self, removed_items: List[str], kept_items: int) -> None:
+    def cleanup_complete(self, removed_items: List[str], kept_count: int) -> None:
         """Log cleanup results."""
+        print(f"{self.timestamp()} Cleanup complete: {len(removed_items)} removed, {kept_count} kept (within retention period)")
         for item in removed_items:
-            print(f"           ├─ 🗑️  Removed: {item}")
-
-        print(f"           └─ Cleanup complete: {len(removed_items)} removed, {kept_items} kept (within 48h)")
+            print(f"{self.timestamp()}   Removed: {item}")
         print()
 
 
