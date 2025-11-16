@@ -24,7 +24,7 @@ class SyncService:
 
         self.cleanup_hours = config.cleanup.completed_after_hours
 
-    async def sync_downloads(self):
+    async def sync_downloads(self, fetch_media_info: bool = True):
         """Sync downloads from SABnzbd to database."""
         try:
             # Get queue and history from SABnzbd
@@ -40,7 +40,7 @@ class SyncService:
             # Update database
             async for session in db.get_session():
                 for item in all_items:
-                    await self._update_or_create_download(session, item)
+                    await self._update_or_create_download(session, item, fetch_media_info)
 
                 await session.commit()
 
@@ -51,7 +51,7 @@ class SyncService:
         except Exception as e:
             print(f"[{datetime.now().strftime('%H:%M:%S')}] ❌ Error syncing downloads: {e}")
 
-    async def _update_or_create_download(self, session: AsyncSession, item: Dict[str, Any]):
+    async def _update_or_create_download(self, session: AsyncSession, item: Dict[str, Any], fetch_media_info: bool = True):
         """Update or create a download record."""
         # Check if download exists
         result = await session.execute(
@@ -66,6 +66,16 @@ class SyncService:
                     setattr(download, key, value)
 
             download.updated_at = datetime.utcnow()
+
+            # Fetch media info if missing and requested
+            if fetch_media_info and not download.poster_url:
+                media_info = await self.arr_manager.search_all(item["name"])
+                if media_info:
+                    download.media_type = media_info.get("media_type")
+                    download.media_title = media_info.get("media_title")
+                    download.poster_url = media_info.get("poster_url")
+                    download.year = media_info.get("year")
+                    download.arr_instance = media_info.get("arr_instance")
         else:
             # Create new
             download = Download(id=item["id"])
@@ -73,14 +83,15 @@ class SyncService:
                 if hasattr(download, key):
                     setattr(download, key, value)
 
-            # Try to get media info from Radarr/Sonarr
-            media_info = await self.arr_manager.search_all(item["name"])
-            if media_info:
-                download.media_type = media_info.get("media_type")
-                download.media_title = media_info.get("media_title")
-                download.poster_url = media_info.get("poster_url")
-                download.year = media_info.get("year")
-                download.arr_instance = media_info.get("arr_instance")
+            # Try to get media info from Radarr/Sonarr (only if requested)
+            if fetch_media_info:
+                media_info = await self.arr_manager.search_all(item["name"])
+                if media_info:
+                    download.media_type = media_info.get("media_type")
+                    download.media_title = media_info.get("media_title")
+                    download.poster_url = media_info.get("poster_url")
+                    download.year = media_info.get("year")
+                    download.arr_instance = media_info.get("arr_instance")
 
             session.add(download)
 

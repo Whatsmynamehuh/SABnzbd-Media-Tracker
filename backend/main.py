@@ -70,11 +70,11 @@ async def lifespan(app: FastAPI):
         print(f"❌ ERROR initializing database: {e}")
         raise
 
-    # Initial sync (non-blocking - will retry on schedule)
-    print("🔄 Attempting initial sync with SABnzbd...")
+    # Initial sync (fast - skip media info to avoid blocking startup)
+    print("🔄 Attempting initial sync with SABnzbd (fast mode)...")
     try:
-        await sync_service.sync_downloads()
-        print("✅ Initial sync successful")
+        await sync_service.sync_downloads(fetch_media_info=False)
+        print("✅ Initial sync successful (posters will load in background)")
     except Exception as e:
         print(f"⚠️  Initial sync failed: {e}")
         print("⚠️  Will retry automatically every 5 seconds...")
