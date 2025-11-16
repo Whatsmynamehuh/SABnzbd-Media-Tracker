@@ -1,6 +1,7 @@
 import aiohttp
 from typing import List, Dict, Any, Optional
 import re
+import PTN
 
 
 class ArrClient:
@@ -31,11 +32,17 @@ class ArrClient:
 
     async def search_by_title(self, title: str) -> Optional[Dict[str, Any]]:
         """Search for a movie/show by title using multi-stage matching."""
-        # Clean the title for better matching
-        clean_title = self._clean_title(title)
+        # Parse release name using PTN to extract clean title
+        parsed = PTN.parse(title)
 
-        # Extract year from download filename (e.g., "Movie.Name.2024" -> 2024)
-        download_year = self._extract_year(title)
+        # Get parsed title and year
+        parsed_title = parsed.get('title', title)
+        download_year = parsed.get('year')
+
+        print(f"[PTN Parse] Raw: '{title}' -> Title: '{parsed_title}', Year: {download_year}")
+
+        # Clean the parsed title for better matching
+        clean_title = self._clean_title(parsed_title)
 
         # Get all items from Radarr/Sonarr
         if self.arr_type == "radarr":
@@ -72,14 +79,6 @@ class ArrClient:
             if best_match["score"] >= 60:  # Minimum 60% match
                 return self._format_item(best_match["item"])
 
-        return None
-
-    def _extract_year(self, title: str) -> Optional[int]:
-        """Extract year from download filename."""
-        # Look for 4-digit year (1900-2099)
-        year_match = re.search(r'\b(19\d{2}|20\d{2})\b', title)
-        if year_match:
-            return int(year_match.group(1))
         return None
 
     def _calculate_match_score(self, download_title: str, item_title: str, download_year: Optional[int], item_year: Optional[int]) -> int:
@@ -135,22 +134,9 @@ class ArrClient:
         return max(0, min(100, score))  # Clamp to 0-100
 
     def _clean_title(self, title: str) -> str:
-        """Clean a title for comparison."""
-        # Remove season/episode info for TV shows (S01E02, S01, etc.)
-        title = re.sub(r'[Ss]\d{1,2}[Ee]\d{1,2}', '', title)
-        title = re.sub(r'[Ss]\d{1,2}', '', title)
-
-        # Remove common patterns
-        title = re.sub(r'\[.*?\]', '', title)  # Remove brackets
-        title = re.sub(r'\(.*?\)', '', title)  # Remove parentheses
-        title = re.sub(r'\d{3,4}p', '', title)  # Remove quality
-        title = re.sub(r'(REPACK|PROPER|REAL|RETAIL)', '', title, flags=re.IGNORECASE)
-        title = re.sub(r'(BluRay|WEB-DL|WEBRip|HDTV|x264|x265|HEVC|AAC|DTS)', '', title, flags=re.IGNORECASE)
+        """Clean a title for comparison (PTN already removes most junk)."""
+        # Just normalize: remove extra spaces, lowercase, remove special chars
         title = re.sub(r'[._-]', ' ', title)  # Replace separators with spaces
-
-        # Remove years for cleaner title comparison (we handle years separately)
-        title = re.sub(r'\b(19\d{2}|20\d{2})\b', '', title)
-
         title = re.sub(r'\s+', ' ', title).strip().lower()  # Normalize spaces
         return title
 
