@@ -83,6 +83,12 @@ class SABnzbdClient:
         slots = queue.get("slots", [])
         queue_paused = queue.get("paused", False)
 
+        # CRITICAL: Use GLOBAL queue speed, not per-item mbpersec!
+        # SABnzbd provides a global speed field that's always accurate
+        global_speed_str = queue.get("speed", "0 KB/s")
+        # Parse speed string like "12.3 MB/s" or "500 KB/s" to MB/s
+        global_speed_mb = self._parse_speed_to_mb(global_speed_str)
+
         for position, slot in enumerate(slots, start=1):
             # Determine status
             status = slot.get("status", "")
@@ -99,11 +105,11 @@ class SABnzbdClient:
                 # Everything else is queued (positions 2, 3, 4...)
                 item_status = "queued"
 
-            # Parse numeric fields safely
-            try:
-                speed = float(slot.get("mbpersec") or 0)
-            except (ValueError, TypeError):
-                speed = 0.0
+            # Use global speed for actively downloading items only
+            if item_status == "downloading" and float(slot.get("percentage", 0)) > 0:
+                item_speed = global_speed_mb
+            else:
+                item_speed = 0.0
 
             items.append({
                 "id": slot.get("nzo_id"),
@@ -114,13 +120,38 @@ class SABnzbdClient:
                 "size_total": float(slot.get("mb", 0)),
                 "size_left": float(slot.get("mbleft", 0)),
                 "time_left": slot.get("timeleft", "0:00:00"),
-                "speed": speed,
+                "speed": item_speed,
                 "category": slot.get("cat"),
                 "priority": slot.get("priority"),
                 "queue_position": position,  # Track position in queue
             })
 
         return items
+
+    def _parse_speed_to_mb(self, speed_str: str) -> float:
+        """Parse SABnzbd speed string to MB/s float.
+        Examples: '12.3 MB/s' -> 12.3, '500 KB/s' -> 0.5, '1.2 GB/s' -> 1200.0
+        """
+        try:
+            import re
+            match = re.search(r'([\d.]+)\s*(KB/s|MB/s|GB/s|B/s)', speed_str, re.IGNORECASE)
+            if not match:
+                return 0.0
+
+            value = float(match.group(1))
+            unit = match.group(2).upper()
+
+            if unit == 'KB/S':
+                return value / 1024  # Convert KB/s to MB/s
+            elif unit == 'MB/S':
+                return value
+            elif unit == 'GB/S':
+                return value * 1024  # Convert GB/s to MB/s
+            elif unit == 'B/S':
+                return value / (1024 * 1024)  # Convert B/s to MB/s
+            return 0.0
+        except:
+            return 0.0
 
     def parse_history_items(self, history_data: Dict[str, Any]) -> List[Dict[str, Any]]:
         """Parse history data into standardized format."""

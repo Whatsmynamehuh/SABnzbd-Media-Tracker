@@ -296,20 +296,29 @@ class SyncService:
             }
 
             priority_value = priority_map.get(priority.lower(), 1)
-            await self.sabnzbd.set_priority(download_id, priority_value)
+
+            print(f"{logger.timestamp()} Setting priority for {download_id}: {priority} -> {priority_value}")
+
+            result = await self.sabnzbd.set_priority(download_id, priority_value)
+            print(f"{logger.timestamp()} SABnzbd response: {result}")
 
             # Update in database
             async for session in db.get_session():
-                result = await session.execute(
+                db_result = await session.execute(
                     select(Download).where(Download.id == download_id)
                 )
-                download = result.scalar_one_or_none()
+                download = db_result.scalar_one_or_none()
 
                 if download:
-                    download.priority = priority
+                    download.priority = str(priority_value)  # Store numeric value
                     await session.commit()
+                    print(f"{logger.timestamp()} Updated priority in database")
+                else:
+                    print(f"{logger.timestamp()} Warning: Download {download_id} not found in database")
 
             return True
         except Exception as e:
-            print(f"Error updating priority: {e}")
+            print(f"{logger.timestamp()} ❌ Error updating priority: {e}")
+            import traceback
+            traceback.print_exc()
             return False
