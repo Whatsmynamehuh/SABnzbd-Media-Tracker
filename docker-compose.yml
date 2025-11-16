@@ -4,7 +4,7 @@ services:
   backend:
     container_name: sabnzbd-tracker-backend
     build:
-      context: /mnt/user/1. Appdata/Scripts/SABnzbd-Media-Tracker
+      context: .
       dockerfile: Dockerfile
     ports:
       - "3001:3001"
@@ -20,7 +20,7 @@ services:
   frontend:
     container_name: sabnzbd-tracker-frontend
     build:
-      context: /mnt/user/1. Appdata/Scripts/SABnzbd-Media-Tracker/frontend
+      context: ./frontend
       dockerfile: Dockerfile
     ports:
       - "3000:80"
