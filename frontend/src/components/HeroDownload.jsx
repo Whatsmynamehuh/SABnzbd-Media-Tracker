@@ -124,7 +124,10 @@ export default function HeroDownload({ download, isLoading }) {
           <div className="flex-1 flex flex-col justify-center space-y-6 relative">
             {/* Priority Selector */}
             {showPrioritySelector && (
-              <div className="absolute top-0 right-0 z-50">
+              <div
+                className="absolute top-0 right-0 z-50"
+                onClick={(e) => e.stopPropagation()}
+              >
                 <PrioritySelector
                   currentPriority={download.priority}
                   onSelect={handlePrioritySelect}

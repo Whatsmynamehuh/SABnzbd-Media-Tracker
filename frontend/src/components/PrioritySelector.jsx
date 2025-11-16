@@ -31,7 +31,8 @@ export default function PrioritySelector({ currentPriority, onSelect, onClose })
       {priorities.map(priority => (
         <button
           key={priority.value}
-          onClick={() => {
+          onClick={(e) => {
+            e.stopPropagation()
             console.log('Priority selected:', priority.value)
             onSelect(priority.value)
           }}

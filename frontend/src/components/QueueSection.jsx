@@ -48,7 +48,10 @@ function QueueItem({ download, position }) {
     >
       {/* Priority Selector */}
       {showPrioritySelector && (
-        <div className="absolute z-50 bottom-full mb-2 left-0 right-0">
+        <div
+          className="absolute z-50 bottom-full mb-2 left-0 right-0"
+          onClick={(e) => e.stopPropagation()}
+        >
           <PrioritySelector
             currentPriority={download.priority}
             onSelect={handlePrioritySelect}
@@ -101,6 +104,12 @@ function QueueItem({ download, position }) {
                 <>
                   <span>•</span>
                   <span>{download.media_type === 'movie' ? '🎬' : '📺'}</span>
+                </>
+              )}
+              {download.category && (
+                <>
+                  <span>•</span>
+                  <span className="text-blue-400">{download.category}</span>
                 </>
               )}
             </div>
