@@ -36,7 +36,7 @@ class SABnzbdClient:
     async def set_priority(self, nzo_id: str, priority: int) -> Dict[str, Any]:
         """
         Set priority for a download.
-        Priority: -100 (Default), -1 (Paused), 0 (Low), 1 (Normal), 2 (High), 3 (Force)
+        SABnzbd Priority Values: -1 (Low), 0 (Normal), 1 (High), 2 (Force)
         """
         return await self._make_request("queue", {
             "name": "priority",

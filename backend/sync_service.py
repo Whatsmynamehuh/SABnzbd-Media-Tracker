@@ -291,15 +291,15 @@ class SyncService:
         """Update download priority in SABnzbd."""
         try:
             # Map priority names to SABnzbd values
+            # SABnzbd API: -1 = Low, 0 = Normal, 1 = High, 2 = Force
             priority_map = {
-                "force": 3,
-                "high": 2,
-                "normal": 1,
-                "low": 0,
-                "paused": -1
+                "force": 2,
+                "high": 1,
+                "normal": 0,
+                "low": -1,
             }
 
-            priority_value = priority_map.get(priority.lower(), 1)
+            priority_value = priority_map.get(priority.lower(), 0)
 
             print(f"{logger.timestamp()} Setting priority for {download_id}: {priority} -> {priority_value}")
 
