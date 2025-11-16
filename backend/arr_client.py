@@ -58,11 +58,16 @@ class ArrClient:
 
         # Build list of candidates with match scores
         candidates = []
+        all_titles_sample = []
 
         for item in items:
             item_title_raw = item.get("title", "")
             item_title = self._clean_title(item_title_raw)
             item_year = item.get("year")
+
+            # Keep first 3 titles for debugging
+            if len(all_titles_sample) < 3:
+                all_titles_sample.append(item_title_raw)
 
             # Calculate match score
             score = self._calculate_match_score(clean_title, item_title, download_year, item_year)
@@ -73,7 +78,15 @@ class ArrClient:
                     "score": score,
                     "title": item_title_raw
                 })
-                print(f"[Match Debug] Candidate: '{item_title_raw}' (cleaned: '{item_title}') - Score: {score}")
+
+        # Show sample of library titles
+        print(f"[Match Debug] Sample titles in library: {all_titles_sample}")
+
+        # Show top 3 candidates if any
+        if candidates:
+            candidates.sort(key=lambda x: x["score"], reverse=True)
+            for idx, c in enumerate(candidates[:3]):
+                print(f"[Match Debug] Top candidate #{idx+1}: '{c['title']}' - Score: {c['score']}")
 
         # Sort by score (highest first) and return best match
         if candidates:
