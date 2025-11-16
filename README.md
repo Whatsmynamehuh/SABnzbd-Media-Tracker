@@ -6,18 +6,22 @@ A beautiful, real-time web interface for monitoring your SABnzbd downloads with 
 
 ## Features
 
-- **Real-time Progress Tracking**: Auto-refreshing every 5 seconds to show live download progress
+- **Real-time Progress Tracking**: Auto-refreshing every 2 seconds to show live download progress
 - **Media Posters**: Automatically fetches movie/TV show posters from your Radarr and Sonarr instances
+- **Smart Search**: Quickly find downloads by title, filename, season/episode (S01E02), or category with real-time filtering
+- **Season/Episode Display**: TV shows automatically show season and episode numbers (e.g., S06E18) parsed from filenames
 - **Organized Sections**:
-  - 🔥 **Downloading**: Active downloads with orange progress bars
-  - ⏸️ **Queued**: Waiting downloads with priority management
+  - 🔥 **Downloading**: Active downloads with detailed status (Downloading, Extracting, Verifying, etc.)
+  - 📋 **Queued**: Waiting downloads with visual priority indicators and position numbers
   - ✅ **Completed**: Finished downloads (auto-cleaned after 48 hours)
-  - ⚠️ **Failed**: Failed downloads with error messages
-- **Priority Management**: Change download priorities directly from the interface
-- **Horizontal Scroll Navigation**: Smooth card-based layout for easy browsing
-- **Responsive Design**: Works on desktop and mobile devices
-- **Multiple Instances**: Support for up to 6 Radarr/Sonarr instances
-- **Auto Cleanup**: Completed downloads automatically removed after 48 hours
+  - ⚠️ **Failed**: Failed downloads with detailed error messages
+- **Priority Management**: Change download priorities directly from the interface with correct SABnzbd values (Force, High, Normal, Low)
+- **Category-based Matching**: Intelligent routing to correct Radarr/Sonarr instance based on SABnzbd categories
+- **Advanced Title Matching**: Uses Parse Torrent Name (PTN) for accurate media detection and metadata extraction
+- **Horizontal Scroll Navigation**: Smooth card-based layout with touch support for mobile browsing
+- **Responsive Design**: Full mobile support with touch-optimized controls and adaptive layouts
+- **Multiple Instances**: Support for unlimited Radarr/Sonarr instances with per-category routing
+- **Auto Cleanup**: Completed downloads automatically removed after 48 hours (configurable)
 
 ## Tech Stack
 
@@ -27,6 +31,7 @@ A beautiful, real-time web interface for monitoring your SABnzbd downloads with 
 - **SQLite**: Lightweight database
 - **aiohttp**: Async HTTP client for API calls
 - **APScheduler**: Background task scheduling
+- **PTN (Parse Torrent Name)**: Intelligent media name parsing
 
 ### Frontend
 - **React 18**: Modern UI library
@@ -79,20 +84,36 @@ sabnzbd:
   api_key: "your_sabnzbd_api_key"
 
 radarr:
-  - name: "Radarr 4K"
+  - name: "Radarr-Movies"
     url: "http://localhost:7878"
     api_key: "your_radarr_api_key"
-  - name: "Radarr 1080p"
+    category: "radarr-movies"  # Match SABnzbd category
+
+  - name: "Radarr-Movies-Animation"
     url: "http://localhost:7879"
     api_key: "your_radarr_api_key"
+    category: "radarr-movies-animation"
+
+  - name: "Radarr-Movies-Anime"
+    url: "http://localhost:7880"
+    api_key: "your_radarr_api_key"
+    category: "radarr-movies-anime"
 
 sonarr:
-  - name: "Sonarr 4K"
+  - name: "Sonarr"
     url: "http://localhost:8989"
     api_key: "your_sonarr_api_key"
-  - name: "Sonarr 1080p"
+    category: "sonarr-tvshows"
+
+  - name: "Sonarr-TvShows-Animation"
     url: "http://localhost:8990"
     api_key: "your_sonarr_api_key"
+    category: "sonarr-tvshows-animation"
+
+  - name: "Sonarr-TvShows-Anime"
+    url: "http://localhost:8991"
+    api_key: "your_sonarr_api_key"
+    category: "sonarr-tvshows-anime"
 
 server:
   host: "0.0.0.0"
@@ -102,6 +123,12 @@ cleanup:
   completed_after_hours: 48
   check_interval_minutes: 60
 ```
+
+**Category-based Matching:**
+The `category` field links each Radarr/Sonarr instance to specific SABnzbd categories. This ensures:
+- Downloads are matched to the correct library
+- Posters are fetched from the right instance
+- Supports multiple instances for different media types (4K, 1080p, anime, animation, etc.)
 
 ### Finding Your API Keys
 
@@ -192,20 +219,41 @@ Stop: `docker-compose down`
 
 ### Real-time Monitoring
 
-The interface automatically refreshes every 5 seconds to show:
-- Current download progress
-- Download speeds
-- Time remaining
-- Queue status
+The interface automatically refreshes every 2 seconds to show:
+- Current download progress with detailed status (Downloading, Extracting, Verifying, etc.)
+- Download speeds in real-time
+- Time remaining estimates
+- Queue status and positions
+
+### Smart Search
+
+The built-in search feature allows you to quickly find downloads by:
+- **Media Title**: Search by movie or TV show name
+- **Filename**: Search the original download filename
+- **Season/Episode**: Search by episode identifier (e.g., "s01e02", "S06E18")
+- **Category**: Filter by SABnzbd category
+
+Search is real-time and works across all sections (Downloading, Queued, Completed, Failed).
+
+### Season/Episode Display
+
+For TV shows, the tracker automatically:
+- Parses filenames using PTN (Parse Torrent Name) library
+- Extracts season and episode numbers
+- Displays them in a prominent badge format (e.g., "S06E18")
+- Shows episode info across all views (Hero, Queue, Cards)
+
+This makes it easy to identify which episode is downloading without reading the full filename.
 
 ### Priority Management
 
-For queued downloads, you can set priority levels:
-- **Force**: Download immediately
-- **High**: High priority
-- **Normal**: Default priority
-- **Low**: Low priority
-- **Paused**: Pause the download
+For queued downloads, you can click to change priority levels:
+- **Force** (Value: 2): Download immediately, bypassing the queue
+- **High** (Value: 1): High priority in queue
+- **Normal** (Value: 0): Default priority
+- **Low** (Value: -1): Low priority in queue
+
+Priority changes are reflected instantly in SABnzbd and the interface updates automatically.
 
 ### Auto Cleanup
 
@@ -242,18 +290,42 @@ The backend provides a RESTful API:
 1. Check that `config.yml` exists and is properly formatted
 2. Verify SABnzbd is running and accessible
 3. Check Python version: `python --version` (requires 3.9+)
+4. Ensure all Python dependencies are installed: `pip install -r requirements.txt`
 
 ### No posters showing
 
 1. Verify Radarr/Sonarr URLs are correct and accessible
 2. Check API keys are correct
 3. Ensure the download name matches the media title in Radarr/Sonarr
+4. Verify the `category` field in config.yml matches your SABnzbd categories exactly
+5. Check backend logs for category matching errors
+
+### Priority changes not working
+
+1. Ensure you're using the correct SABnzbd priority values (Force=2, High=1, Normal=0, Low=-1)
+2. Check that SABnzbd API is accessible and responding
+3. Verify the download is in "queued" status (not currently downloading)
+4. Check browser console for API errors
+
+### Season/Episode not showing
+
+1. Ensure the filename follows standard naming conventions (e.g., "Show.Name.S01E02....")
+2. PTN library parses the filename - if the format is non-standard, it may not detect episodes
+3. Check that the download is classified as `media_type: tv` in the database
+
+### Search not finding downloads
+
+1. Search is case-insensitive and searches across: title, filename, season/episode, and category
+2. Try searching for partial matches (e.g., "s01" instead of "s01e02")
+3. Clear the search and verify downloads appear without filtering
+4. Check browser console for JavaScript errors
 
 ### Frontend can't connect to backend
 
 1. Ensure backend is running on port 3001
 2. Check browser console for CORS errors
-3. Verify firewall settings
+3. Verify firewall settings allow connections on ports 3000 and 3001
+4. If using Docker, ensure container networking is configured correctly
 
 ## Contributing
 
