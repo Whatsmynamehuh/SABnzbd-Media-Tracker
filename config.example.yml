@@ -6,28 +6,36 @@ sabnzbd:
   api_key: "your_sabnzbd_api_key"
 
 # Configure your Radarr instances (movies)
+# IMPORTANT: The 'category' must match what you configured in Radarr's download client settings!
 radarr:
   - name: "Radarr 4K"
     url: "http://localhost:7878"
     api_key: "your_radarr_api_key"
+    category: "radarr-movies-4k"  # Must match Radarr's SABnzbd category setting
   - name: "Radarr 1080p"
     url: "http://localhost:7879"
     api_key: "your_radarr_api_key"
+    category: "radarr-movies"  # Must match Radarr's SABnzbd category setting
   - name: "Radarr Kids"
     url: "http://localhost:7880"
     api_key: "your_radarr_api_key"
+    category: "radarr-movies-kids"  # Must match Radarr's SABnzbd category setting
 
 # Configure your Sonarr instances (TV shows)
+# IMPORTANT: The 'category' must match what you configured in Sonarr's download client settings!
 sonarr:
   - name: "Sonarr 4K"
     url: "http://localhost:8989"
     api_key: "your_sonarr_api_key"
+    category: "sonarr-tvshows-4k"  # Must match Sonarr's SABnzbd category setting
   - name: "Sonarr 1080p"
     url: "http://localhost:8990"
     api_key: "your_sonarr_api_key"
+    category: "sonarr-tvshows"  # Must match Sonarr's SABnzbd category setting
   - name: "Sonarr Anime"
     url: "http://localhost:8991"
     api_key: "your_sonarr_api_key"
+    category: "sonarr-tvshows-anime"  # Must match Sonarr's SABnzbd category setting
 
 # Server settings
 server:

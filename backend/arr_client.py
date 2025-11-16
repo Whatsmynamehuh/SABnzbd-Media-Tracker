@@ -6,11 +6,12 @@ import re
 class ArrClient:
     """Client for Radarr/Sonarr API."""
 
-    def __init__(self, name: str, url: str, api_key: str, arr_type: str = "radarr"):
+    def __init__(self, name: str, url: str, api_key: str, arr_type: str = "radarr", category: str = None):
         self.name = name
         self.url = url.rstrip('/')
         self.api_key = api_key
         self.arr_type = arr_type  # "radarr" or "sonarr"
+        self.category = category  # SABnzbd category this instance handles
 
     async def _make_request(self, endpoint: str) -> Any:
         """Make a request to Radarr/Sonarr API."""
@@ -205,7 +206,8 @@ class ArrManager:
                 name=config["name"],
                 url=config["url"],
                 api_key=config["api_key"],
-                arr_type="radarr"
+                arr_type="radarr",
+                category=config.get("category")  # Optional category mapping
             ))
 
         # Initialize Sonarr clients
@@ -214,61 +216,29 @@ class ArrManager:
                 name=config["name"],
                 url=config["url"],
                 api_key=config["api_key"],
-                arr_type="sonarr"
+                arr_type="sonarr",
+                category=config.get("category")  # Optional category mapping
             ))
-
-    def _map_category_to_instance(self, category: str) -> Optional[str]:
-        """Map SABnzbd category to Radarr/Sonarr instance name.
-        Examples:
-          - 'radarr-movies-anime' -> 'Radarr-Movies-Anime'
-          - 'sonarr-tvshows-animation' -> 'Sonarr-TvShows-Animation'
-        """
-        if not category:
-            return None
-
-        # Remove the service prefix (radarr- or sonarr-)
-        parts = category.split('-', 1)
-        if len(parts) < 2:
-            return None
-
-        service_type = parts[0].lower()  # 'radarr' or 'sonarr'
-        instance_suffix = parts[1]  # 'movies-anime', 'tvshows-animation', etc.
-
-        # Convert to title case for each part
-        # 'movies-anime' -> 'Movies-Anime'
-        instance_parts = [part.capitalize() for part in instance_suffix.split('-')]
-        instance_suffix_formatted = '-'.join(instance_parts)
-
-        # Construct full instance name
-        # 'radarr' + 'Movies-Anime' -> 'Radarr-Movies-Anime'
-        instance_name = f"{service_type.capitalize()}-{instance_suffix_formatted}"
-
-        return instance_name
 
     async def search_all(self, title: str, category: Optional[str] = None) -> Optional[Dict[str, Any]]:
         """Search specific Radarr/Sonarr instance based on category.
-        NO FALLBACK - only searches the instance that matches the category.
+        NO FALLBACK - only searches the instance where category matches.
         """
         if not category:
             # No category = no search
             return None
 
-        target_instance = self._map_category_to_instance(category)
-        if not target_instance:
-            # Can't map category to instance
-            return None
-
-        # Search ONLY the specific instance that matches the category
+        # Find the client that handles this category
         for client in self.clients:
-            if client.name == target_instance:
-                print(f"[Poster Match] Searching '{target_instance}' for '{title}' (category: {category})")
+            if client.category and client.category == category:
+                print(f"[Poster Match] Searching '{client.name}' for '{title}' (category: {category})")
                 result = await client.search_by_title(title)
                 if result:
-                    print(f"[Poster Match] ✓ Found in '{target_instance}': {result.get('media_title')}")
+                    print(f"[Poster Match] ✓ Found in '{client.name}': {result.get('media_title')}")
                 else:
-                    print(f"[Poster Match] ✗ Not found in '{target_instance}'")
+                    print(f"[Poster Match] ✗ Not found in '{client.name}'")
                 return result
 
-        # Instance name didn't match any configured clients
-        print(f"[Poster Match] ⚠️  Instance '{target_instance}' not configured (category: {category})")
+        # No instance configured for this category
+        print(f"[Poster Match] ⚠️  No instance configured for category '{category}'")
         return None
