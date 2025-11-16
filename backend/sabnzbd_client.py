@@ -91,12 +91,19 @@ class SABnzbdClient:
             # Position #1 is the active download, everything else is queued
             if status in ["Paused"] or queue_paused:
                 item_status = "paused"
-            elif position == 1 and status in ["Downloading", "Fetching"]:
-                # Only the first item can be actively downloading
+            elif position == 1:
+                # Position #1 is ALWAYS the active item (downloading, extracting, verifying, etc.)
+                # Include all post-processing statuses: Extracting, Verifying, Repairing, Moving, QuickCheck
                 item_status = "downloading"
             else:
                 # Everything else is queued (positions 2, 3, 4...)
                 item_status = "queued"
+
+            # Parse numeric fields safely
+            try:
+                speed = float(slot.get("mbpersec") or 0)
+            except (ValueError, TypeError):
+                speed = 0.0
 
             items.append({
                 "id": slot.get("nzo_id"),
@@ -106,7 +113,7 @@ class SABnzbdClient:
                 "size_total": float(slot.get("mb", 0)),
                 "size_left": float(slot.get("mbleft", 0)),
                 "time_left": slot.get("timeleft", "0:00:00"),
-                "speed": float(slot.get("mbpersec", 0)),
+                "speed": speed,
                 "category": slot.get("cat"),
                 "priority": slot.get("priority"),
                 "queue_position": position,  # Track position in queue
