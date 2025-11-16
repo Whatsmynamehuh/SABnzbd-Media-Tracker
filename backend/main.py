@@ -25,6 +25,7 @@ class DownloadResponse(BaseModel):
     speed: float | None
     category: str | None
     priority: str | None
+    queue_position: int | None  # Position in queue (#1, #2, #3...)
     media_type: str | None
     media_title: str | None
     poster_url: str | None
@@ -179,6 +180,7 @@ async def get_all_downloads(session: AsyncSession = Depends(get_db_session)):
             speed=d.speed,
             category=d.category,
             priority=d.priority,
+            queue_position=d.queue_position,
             media_type=d.media_type,
             media_title=d.media_title,
             poster_url=d.poster_url,

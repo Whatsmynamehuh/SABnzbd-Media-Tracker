@@ -36,8 +36,8 @@ export default function HeroDownload({ download, isLoading }) {
   }
 
   return (
-    <section className="w-full max-w-4xl mx-auto">
-      <h2 className="text-2xl font-bold text-white mb-6">Downloading Now</h2>
+    <section className="w-full max-w-4xl mx-auto px-2">
+      <h2 className="text-2xl font-bold text-white mb-6 px-2">Downloading Now</h2>
 
       <div className="bg-jellyseerr-card rounded-2xl overflow-hidden border border-orange-500/50 shadow-2xl shadow-orange-500/20">
         <div className="flex flex-col md:flex-row gap-6 p-6">

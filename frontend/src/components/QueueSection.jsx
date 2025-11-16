@@ -120,8 +120,12 @@ export default function QueueSection({ downloads }) {
       </div>
 
       <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
-        {downloads.map((download, index) => (
-          <QueueItem key={download.id} download={download} position={index + 1} />
+        {downloads.map((download) => (
+          <QueueItem
+            key={download.id}
+            download={download}
+            position={download.queue_position || '?'}
+          />
         ))}
       </div>
     </section>

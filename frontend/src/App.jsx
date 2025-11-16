@@ -23,7 +23,12 @@ function App() {
 
   // Separate downloads by status
   const activeDownload = downloads.find(d => d.status === 'downloading' && !d.failed)
-  const queuedDownloads = downloads.filter(d => d.status === 'queued' && !d.failed)
+
+  // CRITICAL: Sort queue by queue_position to match SABnzbd order (#1, #2, #3...)
+  const queuedDownloads = downloads
+    .filter(d => d.status === 'queued' && !d.failed)
+    .sort((a, b) => (a.queue_position || 0) - (b.queue_position || 0))
+
   const completedDownloads = downloads
     .filter(d => d.status === 'completed' && !d.failed)
     .sort((a, b) => new Date(b.completed_at) - new Date(a.completed_at)) // Newest first (left to right)
