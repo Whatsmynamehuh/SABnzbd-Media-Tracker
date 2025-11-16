@@ -77,22 +77,37 @@ class SyncService:
         download = result.scalar_one_or_none()
 
         if download:
-            # Update existing
+            # CRITICAL: Once an item is completed or failed, freeze it!
+            # Don't update from SABnzbd anymore - let it persist for 48h cleanup
+            if download.status in ['completed', 'failed']:
+                # Item already completed/failed - don't touch it
+                # It will persist until cleanup job removes it (48h later)
+                # This ensures "Recently Completed" shows items even if SABnzbd removes them
+                return
+
+            # Update active downloads (downloading/queued)
             for key, value in item.items():
                 if hasattr(download, key):
                     setattr(download, key, value)
 
             download.updated_at = datetime.utcnow()
 
-            # Don't fetch media info for existing items during regular sync
-            # A separate background job will handle this
-            pass
+            # If this update marks it as completed, set completed_at timestamp
+            if item.get('status') == 'completed' and not download.completed_at:
+                download.completed_at = datetime.utcnow()
+
         else:
             # Create new
             download = Download(id=item["id"])
             for key, value in item.items():
                 if hasattr(download, key):
                     setattr(download, key, value)
+
+            # Set completed_at if this is a completed item from history
+            if item.get('status') == 'completed' and item.get('completed_at'):
+                download.completed_at = item['completed_at']
+            elif item.get('status') == 'completed':
+                download.completed_at = datetime.utcnow()
 
             # Mark for media info fetch (will be done by background job)
             session.add(download)
