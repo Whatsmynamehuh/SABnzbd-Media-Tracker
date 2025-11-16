@@ -126,6 +126,11 @@ class SABnzbdClient:
             season = parsed.get("season")
             episode = parsed.get("episode")
 
+            # Handle multi-episode files (e.g., S01E39E40 returns [39, 40])
+            # Store only the first episode number for database compatibility
+            if isinstance(episode, list) and len(episode) > 0:
+                episode = episode[0]
+
             items.append({
                 "id": slot.get("nzo_id"),
                 "name": slot.get("filename"),
