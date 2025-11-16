@@ -13,6 +13,7 @@ class ArrInstanceConfig(BaseModel):
     name: str
     url: str
     api_key: str
+    category: Optional[str] = None  # SABnzbd category this instance handles
 
 
 class ServerConfig(BaseModel):
