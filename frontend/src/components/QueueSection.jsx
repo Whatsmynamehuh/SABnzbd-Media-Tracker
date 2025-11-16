@@ -147,11 +147,20 @@ export default function QueueSection({ downloads }) {
 
   return (
     <section>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-4">
         <h2 className="text-2xl font-bold text-white">
           Queue <span className="text-gray-600">({downloads.length})</span>
         </h2>
-        <p className="text-sm text-gray-500">Click to change priority • Force / High / Normal</p>
+        <p className="text-sm text-gray-500">
+          Click to change priority • Force / High / Normal
+        </p>
+      </div>
+
+      {/* Info Banner */}
+      <div className="mb-6 px-4 py-3 bg-blue-500/10 border border-blue-500/30 rounded-xl">
+        <p className="text-xs text-blue-300">
+          💡 <span className="font-semibold">Priority Note:</span> Items at position #1 are automatically set to <span className="font-bold">FORCE</span> by SABnzbd while actively downloading
+        </p>
       </div>
 
       <div
