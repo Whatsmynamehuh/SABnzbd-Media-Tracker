@@ -113,7 +113,7 @@ async def lifespan(app: FastAPI):
     print("  ✅ SABnzbd Media Tracker Backend Started")
     print("════════════════════════════════════════════════════════════")
     print(f"  📊 Real-time sync: Every 5 seconds (fast)")
-    print(f"  🖼️  Poster fetch: Every 15 seconds (10 items at a time)")
+    print(f"  🖼️  Poster fetch: Every 10 seconds (20 items at a time)")
     print(f"  🧹 Cleanup: Every {config.cleanup.check_interval_minutes} minutes")
     print(f"  🗑️  Auto-remove completed after {config.cleanup.completed_after_hours}h")
     print("════════════════════════════════════════════════════════════")
