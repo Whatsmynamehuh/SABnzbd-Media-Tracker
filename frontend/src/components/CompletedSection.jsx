@@ -61,16 +61,29 @@ function CompletedItem({ download }) {
 export default function CompletedSection({ downloads }) {
   const scrollContainerRef = useRef(null)
 
-  // Enable horizontal scrolling with mouse wheel on desktop
+  // Enable horizontal scrolling with mouse wheel on desktop (Shift + Scroll)
   useEffect(() => {
     const scrollContainer = scrollContainerRef.current
     if (!scrollContainer) return
 
     const handleWheel = (e) => {
       // Only handle horizontal scrolling if there's content to scroll
-      if (scrollContainer.scrollWidth > scrollContainer.clientWidth) {
-        e.preventDefault()
-        scrollContainer.scrollLeft += e.deltaY
+      const hasHorizontalScroll = scrollContainer.scrollWidth > scrollContainer.clientWidth
+
+      if (hasHorizontalScroll) {
+        // Use Shift+Scroll for horizontal scrolling, or convert vertical to horizontal
+        // if there's a clear horizontal scroll intent (low vertical delta)
+        const isShiftScroll = e.shiftKey
+        const isHorizontalIntent = Math.abs(e.deltaX) > Math.abs(e.deltaY)
+
+        if (isShiftScroll || isHorizontalIntent) {
+          e.preventDefault()
+          scrollContainer.scrollLeft += e.shiftKey ? e.deltaY : e.deltaX
+        } else if (Math.abs(e.deltaY) < 50 && Math.abs(e.deltaX) === 0) {
+          // Small vertical scrolls convert to horizontal (gentle nudge)
+          e.preventDefault()
+          scrollContainer.scrollLeft += e.deltaY
+        }
       }
     }
 
@@ -99,15 +112,17 @@ export default function CompletedSection({ downloads }) {
         <h2 className="text-2xl font-bold text-white">
           Recently Completed <span className="text-gray-600">({downloads.length})</span>
         </h2>
-        <p className="text-sm text-gray-500">Auto-cleanup after 48 hours • Scroll with mouse wheel</p>
+        <p className="text-sm text-gray-500">Auto-cleanup after 48 hours • Shift+Scroll or drag scrollbar</p>
       </div>
 
       <div
         ref={scrollContainerRef}
-        className="flex gap-3 overflow-x-auto pb-4 scrollbar-hide"
+        className="flex gap-3 overflow-x-auto pb-4 scrollbar-hide touch-pan-x"
         style={{
           WebkitOverflowScrolling: 'touch',
-          touchAction: 'pan-x',
+          touchAction: 'pan-x pinch-zoom',
+          overscrollBehaviorX: 'contain',
+          overscrollBehaviorY: 'none',
           scrollBehavior: 'smooth'
         }}
       >
