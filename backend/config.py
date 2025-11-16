@@ -28,6 +28,10 @@ class CleanupConfig(BaseModel):
 
 class DebugConfig(BaseModel):
     enable_priority_logging: bool = False
+    enable_category_logging: bool = False
+    enable_poster_logging: bool = False
+    enable_parsing_logging: bool = False
+    enable_match_logging: bool = False
 
 
 class Config(BaseModel):

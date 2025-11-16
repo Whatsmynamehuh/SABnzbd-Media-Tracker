@@ -25,7 +25,14 @@ class SyncService:
         # Initialize Arr manager
         radarr_configs = [r.dict() for r in config.radarr]
         sonarr_configs = [s.dict() for s in config.sonarr]
-        self.arr_manager = ArrManager(radarr_configs, sonarr_configs)
+        self.arr_manager = ArrManager(
+            radarr_configs,
+            sonarr_configs,
+            enable_category_logging=config.debug.enable_category_logging,
+            enable_parsing_logging=config.debug.enable_parsing_logging,
+            enable_match_logging=config.debug.enable_match_logging,
+            enable_poster_logging=config.debug.enable_poster_logging
+        )
 
         self.cleanup_hours = config.cleanup.completed_after_hours
 

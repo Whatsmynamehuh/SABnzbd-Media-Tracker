@@ -7,12 +7,17 @@ import PTN
 class ArrClient:
     """Client for Radarr/Sonarr API."""
 
-    def __init__(self, name: str, url: str, api_key: str, arr_type: str = "radarr", category: str = None):
+    def __init__(self, name: str, url: str, api_key: str, arr_type: str = "radarr", category: str = None,
+                 enable_parsing_logging: bool = False, enable_match_logging: bool = False,
+                 enable_poster_logging: bool = False):
         self.name = name
         self.url = url.rstrip('/')
         self.api_key = api_key
         self.arr_type = arr_type  # "radarr" or "sonarr"
         self.category = category  # SABnzbd category this instance handles
+        self.enable_parsing_logging = enable_parsing_logging
+        self.enable_match_logging = enable_match_logging
+        self.enable_poster_logging = enable_poster_logging
 
     async def _make_request(self, endpoint: str) -> Any:
         """Make a request to Radarr/Sonarr API."""
@@ -39,11 +44,13 @@ class ArrClient:
         parsed_title = parsed.get('title', title)
         download_year = parsed.get('year')
 
-        print(f"[PTN Parse] Raw: '{title}' -> Title: '{parsed_title}', Year: {download_year}")
+        if self.enable_parsing_logging:
+            print(f"[PTN Parse] Raw: '{title}' -> Title: '{parsed_title}', Year: {download_year}")
 
         # Clean the parsed title for better matching
         clean_title = self._clean_title(parsed_title)
-        print(f"[Match Debug] Cleaned search title: '{clean_title}'")
+        if self.enable_match_logging:
+            print(f"[Match Debug] Cleaned search title: '{clean_title}'")
 
         # Get all items from Radarr/Sonarr
         if self.arr_type == "radarr":
@@ -54,7 +61,8 @@ class ArrClient:
         if not items:
             return None
 
-        print(f"[Match Debug] Searching {len(items)} items in {self.name}")
+        if self.enable_match_logging:
+            print(f"[Match Debug] Searching {len(items)} items in {self.name}")
 
         # Build list of candidates with match scores
         candidates = []
@@ -66,7 +74,7 @@ class ArrClient:
             item_year = item.get("year")
 
             # Keep first 3 titles for debugging
-            if len(all_titles_sample) < 3:
+            if self.enable_match_logging and len(all_titles_sample) < 3:
                 all_titles_sample.append(item_title_raw)
 
             # Calculate match score
@@ -80,10 +88,11 @@ class ArrClient:
                 })
 
         # Show sample of library titles
-        print(f"[Match Debug] Sample titles in library: {all_titles_sample}")
+        if self.enable_match_logging:
+            print(f"[Match Debug] Sample titles in library: {all_titles_sample}")
 
         # Show top 3 candidates if any
-        if candidates:
+        if self.enable_match_logging and candidates:
             candidates.sort(key=lambda x: x["score"], reverse=True)
             for idx, c in enumerate(candidates[:3]):
                 print(f"[Match Debug] Top candidate #{idx+1}: '{c['title']}' - Score: {c['score']}")
@@ -92,15 +101,18 @@ class ArrClient:
         if candidates:
             candidates.sort(key=lambda x: x["score"], reverse=True)
             best_match = candidates[0]
-            print(f"[Match Debug] Best match: '{best_match['title']}' with score {best_match['score']}")
+            if self.enable_match_logging:
+                print(f"[Match Debug] Best match: '{best_match['title']}' with score {best_match['score']}")
 
             # Only return if score meets minimum threshold
             if best_match["score"] >= 60:  # Minimum 60% match
                 return self._format_item(best_match["item"])
             else:
-                print(f"[Match Debug] Best score {best_match['score']} is below threshold of 60")
+                if self.enable_match_logging:
+                    print(f"[Match Debug] Best score {best_match['score']} is below threshold of 60")
         else:
-            print(f"[Match Debug] No candidates with score > 0")
+            if self.enable_match_logging:
+                print(f"[Match Debug] No candidates with score > 0")
 
         return None
 
@@ -236,8 +248,12 @@ class ArrClient:
 class ArrManager:
     """Manages multiple Radarr/Sonarr instances."""
 
-    def __init__(self, radarr_configs: List[Dict], sonarr_configs: List[Dict]):
+    def __init__(self, radarr_configs: List[Dict], sonarr_configs: List[Dict],
+                 enable_category_logging: bool = False, enable_parsing_logging: bool = False,
+                 enable_match_logging: bool = False, enable_poster_logging: bool = False):
         self.clients = []
+        self.enable_category_logging = enable_category_logging
+        self.enable_poster_logging = enable_poster_logging
 
         # Initialize Radarr clients
         for config in radarr_configs:
@@ -246,10 +262,14 @@ class ArrManager:
                 url=config["url"],
                 api_key=config["api_key"],
                 arr_type="radarr",
-                category=config.get("category")  # Optional category mapping
+                category=config.get("category"),  # Optional category mapping
+                enable_parsing_logging=enable_parsing_logging,
+                enable_match_logging=enable_match_logging,
+                enable_poster_logging=enable_poster_logging
             )
             self.clients.append(client)
-            print(f"[Category Config] Loaded {client.name} with category: {client.category}")
+            if enable_category_logging:
+                print(f"[Category Config] Loaded {client.name} with category: {client.category}")
 
         # Initialize Sonarr clients
         for config in sonarr_configs:
@@ -258,10 +278,14 @@ class ArrManager:
                 url=config["url"],
                 api_key=config["api_key"],
                 arr_type="sonarr",
-                category=config.get("category")  # Optional category mapping
+                category=config.get("category"),  # Optional category mapping
+                enable_parsing_logging=enable_parsing_logging,
+                enable_match_logging=enable_match_logging,
+                enable_poster_logging=enable_poster_logging
             )
             self.clients.append(client)
-            print(f"[Category Config] Loaded {client.name} with category: {client.category}")
+            if enable_category_logging:
+                print(f"[Category Config] Loaded {client.name} with category: {client.category}")
 
     async def search_all(self, title: str, category: Optional[str] = None) -> Optional[Dict[str, Any]]:
         """Search specific Radarr/Sonarr instance based on category.
@@ -271,20 +295,25 @@ class ArrManager:
             # No category = no search
             return None
 
-        print(f"[Category Match] Looking for category '{category}' among {len(self.clients)} instances")
+        if self.enable_category_logging:
+            print(f"[Category Match] Looking for category '{category}' among {len(self.clients)} instances")
 
         # Find the client that handles this category
         for client in self.clients:
-            print(f"[Category Match] Checking {client.name}: client.category='{client.category}' vs search='{category}' | Match: {client.category == category}")
+            if self.enable_category_logging:
+                print(f"[Category Match] Checking {client.name}: client.category='{client.category}' vs search='{category}' | Match: {client.category == category}")
             if client.category and client.category == category:
-                print(f"[Poster Match] Searching '{client.name}' for '{title}' (category: {category})")
+                if self.enable_poster_logging:
+                    print(f"[Poster Match] Searching '{client.name}' for '{title}' (category: {category})")
                 result = await client.search_by_title(title)
-                if result:
-                    print(f"[Poster Match] ✓ Found in '{client.name}': {result.get('media_title')}")
-                else:
-                    print(f"[Poster Match] ✗ Not found in '{client.name}'")
+                if self.enable_poster_logging:
+                    if result:
+                        print(f"[Poster Match] ✓ Found in '{client.name}': {result.get('media_title')}")
+                    else:
+                        print(f"[Poster Match] ✗ Not found in '{client.name}'")
                 return result
 
         # No instance configured for this category
-        print(f"[Poster Match] ⚠️  No instance configured for category '{category}'")
+        if self.enable_poster_logging:
+            print(f"[Poster Match] ⚠️  No instance configured for category '{category}'")
         return None

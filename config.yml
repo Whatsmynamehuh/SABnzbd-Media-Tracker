@@ -50,3 +50,7 @@ cleanup:
 # Debug settings
 debug:
   enable_priority_logging: false  # Enable detailed priority debugging (WARNING: may impact performance)
+  enable_category_logging: false  # Show category matching between SABnzbd and Radarr/Sonarr
+  enable_poster_logging: false    # Show poster search attempts and results
+  enable_parsing_logging: false   # Show filename parsing details
+  enable_match_logging: false     # Show title matching scores and logic
