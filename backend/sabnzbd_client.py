@@ -82,7 +82,7 @@ class SABnzbdClient:
         queue = queue_data["queue"]
         slots = queue.get("slots", [])
 
-        for slot in slots:
+        for position, slot in enumerate(slots, start=1):
             # Determine status
             status = slot.get("status", "")
             if status in ["Downloading", "Fetching"]:
@@ -105,6 +105,7 @@ class SABnzbdClient:
                 "speed": float(slot.get("mbpersec", 0)),
                 "category": slot.get("cat"),
                 "priority": slot.get("priority"),
+                "queue_position": position,  # Track position in queue
             })
 
         return items

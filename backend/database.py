@@ -20,6 +20,7 @@ class Download(Base):
     speed = Column(Float, nullable=True)  # MB/s
     category = Column(String, nullable=True)
     priority = Column(String, nullable=True)  # Force, High, Normal, Low
+    queue_position = Column(Integer, nullable=True)  # Position in queue (1, 2, 3...)
 
     # Media info from Radarr/Sonarr
     media_type = Column(String, nullable=True)  # movie or tv
