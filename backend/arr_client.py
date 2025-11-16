@@ -158,8 +158,9 @@ class ArrClient:
 
     def _clean_title(self, title: str) -> str:
         """Clean a title for comparison (PTN already removes most junk)."""
-        # Just normalize: remove extra spaces, lowercase, remove special chars
+        # Remove ALL punctuation and special characters, keep only letters, numbers, spaces
         title = re.sub(r'[._-]', ' ', title)  # Replace separators with spaces
+        title = re.sub(r'[^\w\s]', '', title)  # Remove all punctuation (!, :, etc)
         title = re.sub(r'\s+', ' ', title).strip().lower()  # Normalize spaces
         return title
 
