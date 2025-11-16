@@ -217,10 +217,11 @@ class SyncService:
                         .where(Download.poster_url == None)
                         .where(Download.poster_attempted == False)
                         .where(Download.status == 'downloading')
-                        .limit(20)
+                        .limit(5)  # Reduced from 20 to 5 to prevent job overlaps
                     )
                     downloads_without_info = result.scalars().all()
                     fetch_type = "downloading"
+                    print(f"{logger.timestamp()} 🔍 Fetching posters for DOWNLOADING items ({len(downloads_without_info)} items)")
 
                 elif completed_without > 0:
                     # Priority 2: Recently completed items (newest first)
@@ -230,10 +231,11 @@ class SyncService:
                         .where(Download.poster_attempted == False)
                         .where(Download.status == 'completed')
                         .order_by(Download.completed_at.desc())  # newest first
-                        .limit(20)
+                        .limit(5)  # Reduced from 20 to 5 to prevent job overlaps
                     )
                     downloads_without_info = result.scalars().all()
                     fetch_type = "completed"
+                    print(f"{logger.timestamp()} 🔍 Fetching posters for COMPLETED items ({len(downloads_without_info)} items)")
 
                 elif queued_without > 0:
                     # Priority 3: Queued items (by position #2, #3, #4...)
@@ -243,10 +245,11 @@ class SyncService:
                         .where(Download.poster_attempted == False)
                         .where(Download.status == 'queued')
                         .order_by(Download.queue_position.asc())  # #2, #3, #4...
-                        .limit(20)
+                        .limit(5)  # Reduced from 20 to 5 to prevent job overlaps
                     )
                     downloads_without_info = result.scalars().all()
                     fetch_type = "queued"
+                    print(f"{logger.timestamp()} 🔍 Fetching posters for QUEUED items ({len(downloads_without_info)} items, positions {min([d.queue_position for d in downloads_without_info if d.queue_position])}-{max([d.queue_position for d in downloads_without_info if d.queue_position])})")
 
                 else:
                     return

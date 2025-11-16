@@ -232,6 +232,31 @@ async def update_download_priority(download_id: str, priority_update: PriorityUp
     return {"status": "ok", "message": "Priority updated"}
 
 
+@app.post("/api/admin/reset-poster-flags")
+async def reset_poster_flags(session: AsyncSession = Depends(get_db_session)):
+    """Reset poster_attempted flag for items without posters so they can be retried."""
+    try:
+        from sqlalchemy import update
+
+        # Update all downloads that have no poster but were attempted
+        result = await session.execute(
+            update(Download)
+            .where(Download.poster_url == None)
+            .where(Download.poster_attempted == True)
+            .values(poster_attempted=False)
+        )
+
+        await session.commit()
+        count = result.rowcount
+
+        return {
+            "status": "ok",
+            "message": f"Reset poster_attempted for {count} items - they will be retried"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to reset flags: {str(e)}")
+
+
 @app.get("/api/stats")
 async def get_stats(session: AsyncSession = Depends(get_db_session)):
     """Get statistics about downloads."""
