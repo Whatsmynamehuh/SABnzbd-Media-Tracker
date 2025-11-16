@@ -115,9 +115,54 @@ cleanup:
 
 ## Usage
 
-### Development Mode
+### Quick Start with Interactive Scripts (Recommended)
 
-Run both backend and frontend in development mode:
+We provide interactive startup scripts that give you deployment options:
+
+**Linux/Mac:**
+```bash
+chmod +x start.sh
+./start.sh
+```
+
+**Windows:**
+```bash
+start.bat
+```
+
+**You'll see a menu with options:**
+1. **🚀 Start in Development Mode** - Run directly (accessible from network)
+2. **🐳 Deploy with Docker Compose** - Run in containers
+3. **❌ Exit**
+
+The scripts will:
+- ✅ Check all dependencies
+- ✅ Install missing packages
+- ✅ Auto-detect your server's IP address
+- ✅ Show you the exact URL to access from other devices
+
+### Network Access
+
+When you start the app, the script will show you:
+
+```
+✅ SABnzbd Media Tracker is RUNNING!
+
+📱 Access from this server:
+   http://localhost:3000
+
+🌐 Access from other devices on your network:
+   http://192.168.1.100:3000  ← Use this on your phone/tablet!
+```
+
+**Perfect for:**
+- 📱 Accessing from your phone while on the couch
+- 💻 Monitoring from your laptop anywhere in the house
+- 📺 Displaying on a tablet mounted on the wall
+
+### Manual Development Mode
+
+If you prefer to run manually:
 
 ```bash
 # Terminal 1 - Backend
@@ -129,36 +174,19 @@ npm run dev
 ```
 
 The application will be available at:
-- **Frontend**: http://localhost:3000
+- **Frontend**: http://localhost:3000 or http://YOUR_SERVER_IP:3000
 - **Backend API**: http://localhost:3001
 
-### Production Mode
+### Docker Compose Deployment
+
+For production use with automatic restarts:
 
 ```bash
-# Build frontend
-cd frontend
-npm run build
-
-# Run backend (serves both API and static files in production)
-python -m backend.main
+docker-compose up -d --build
 ```
 
-## Using the Startup Scripts
-
-We provide convenient startup scripts:
-
-### Linux/Mac
-
-```bash
-chmod +x start.sh
-./start.sh
-```
-
-### Windows
-
-```bash
-start.bat
-```
+View logs: `docker-compose logs -f`
+Stop: `docker-compose down`
 
 ## Features in Detail
 
