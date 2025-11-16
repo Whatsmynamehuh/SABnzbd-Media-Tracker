@@ -7,10 +7,12 @@ export default {
   theme: {
     extend: {
       colors: {
-        'download-progress': '#f97316', // Orange for downloading
-        'queue-progress': '#3b82f6', // Blue for queued
-        'complete-progress': '#22c55e', // Green for completed
-        'failed-progress': '#ef4444', // Red for failed
+        'jellyseerr-dark': '#0F0F14',
+        'jellyseerr-card': '#1A1D29',
+        'download-progress': '#f97316',
+        'queue-progress': '#3b82f6',
+        'complete-progress': '#22c55e',
+        'failed-progress': '#ef4444',
       },
       keyframes: {
         shimmer: {
