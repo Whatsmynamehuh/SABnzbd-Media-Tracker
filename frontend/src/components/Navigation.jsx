@@ -5,67 +5,60 @@ export default function Navigation({ activeSection, setActiveSection, stats }) {
       label: 'Downloading',
       icon: '⬇️',
       count: stats.downloading || 0,
-      color: 'orange'
+      gradient: 'from-orange-500 to-red-600',
+      glowColor: 'orange'
     },
     {
       id: 'queued',
       label: 'Queued',
       icon: '⏸️',
       count: stats.queued || 0,
-      color: 'blue'
+      gradient: 'from-blue-500 to-cyan-600',
+      glowColor: 'blue'
     },
     {
       id: 'completed',
       label: 'Completed',
       icon: '✅',
       count: stats.completed || 0,
-      color: 'green'
+      gradient: 'from-green-500 to-emerald-600',
+      glowColor: 'green'
     },
   ]
 
-  const colorClasses = {
-    orange: {
-      active: 'bg-orange-500 text-white',
-      hover: 'hover:bg-orange-500/20 hover:text-orange-400',
-      border: 'border-orange-500'
-    },
-    blue: {
-      active: 'bg-blue-500 text-white',
-      hover: 'hover:bg-blue-500/20 hover:text-blue-400',
-      border: 'border-blue-500'
-    },
-    green: {
-      active: 'bg-green-500 text-white',
-      hover: 'hover:bg-green-500/20 hover:text-green-400',
-      border: 'border-green-500'
-    },
-  }
-
   return (
-    <nav className="bg-gray-900/30 border-b border-gray-800 sticky top-[73px] z-40">
-      <div className="container mx-auto px-4">
-        <div className="flex gap-2 overflow-x-auto scrollbar-hide py-4">
+    <nav className="relative backdrop-blur-xl bg-white/5 border-b border-white/10 sticky top-[89px] z-40">
+      <div className="container mx-auto px-6">
+        <div className="flex gap-4 overflow-x-auto scrollbar-hide py-6">
           {sections.map(section => {
             const isActive = activeSection === section.id
-            const colors = colorClasses[section.color]
 
             return (
               <button
                 key={section.id}
                 onClick={() => setActiveSection(section.id)}
-                className={`px-6 py-3 rounded-lg font-medium transition-all whitespace-nowrap flex items-center gap-2 ${
+                className={`group relative px-8 py-4 rounded-2xl font-bold transition-all duration-300 whitespace-nowrap flex items-center gap-3 ${
                   isActive
-                    ? `${colors.active} shadow-lg`
-                    : `bg-gray-800 text-gray-300 ${colors.hover}`
+                    ? `bg-gradient-to-r ${section.gradient} text-white shadow-2xl shadow-${section.glowColor}-500/50 scale-110`
+                    : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10 hover:border-white/20 hover:scale-105'
                 }`}
               >
-                <span>{section.icon}</span>
-                <span>{section.label}</span>
-                <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
-                  isActive ? 'bg-white/20' : 'bg-gray-700'
+                <span className={`text-2xl ${isActive ? 'animate-bounce' : 'group-hover:scale-125 transition-transform'}`}>
+                  {section.icon}
+                </span>
+                <span className="text-lg">{section.label}</span>
+                <span className={`min-w-[2rem] h-8 flex items-center justify-center px-3 rounded-xl text-sm font-black ${
+                  isActive
+                    ? 'bg-white/20 backdrop-blur-sm'
+                    : 'bg-white/10 group-hover:bg-white/20'
                 }`}>
                   {section.count}
                 </span>
+
+                {/* Glow effect for active */}
+                {isActive && (
+                  <div className={`absolute inset-0 rounded-2xl bg-gradient-to-r ${section.gradient} blur-xl opacity-50 -z-10`}></div>
+                )}
               </button>
             )
           })}

@@ -12,6 +12,15 @@ export default {
         'complete-progress': '#22c55e', // Green for completed
         'failed-progress': '#ef4444', // Red for failed
       },
+      keyframes: {
+        shimmer: {
+          '0%': { transform: 'translateX(-100%)' },
+          '100%': { transform: 'translateX(100%)' },
+        },
+      },
+      animation: {
+        shimmer: 'shimmer 2s infinite',
+      },
     },
   },
   plugins: [],

@@ -54,28 +54,48 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950">
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950 relative overflow-hidden">
+      {/* Animated Background */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-1/2 -left-1/2 w-full h-full bg-gradient-to-br from-orange-500/10 to-transparent rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute -bottom-1/2 -right-1/2 w-full h-full bg-gradient-to-tl from-purple-500/10 to-transparent rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
+      </div>
+
       {/* Header */}
-      <header className="bg-gray-900/50 backdrop-blur-sm border-b border-gray-800 sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4">
+      <header className="relative backdrop-blur-xl bg-white/5 border-b border-white/10 sticky top-0 z-50 shadow-2xl">
+        <div className="container mx-auto px-6 py-5">
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-orange-500 to-red-500 bg-clip-text text-transparent">
-                SABnzbd Media Tracker
-              </h1>
-              <p className="text-sm text-gray-400 mt-1">Real-time download monitoring</p>
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center shadow-lg shadow-orange-500/50">
+                <span className="text-2xl">⚡</span>
+              </div>
+              <div>
+                <h1 className="text-3xl font-black bg-gradient-to-r from-orange-400 via-red-400 to-pink-400 bg-clip-text text-transparent tracking-tight">
+                  SABnzbd Media Tracker
+                </h1>
+                <p className="text-sm text-gray-400 mt-0.5 font-medium">Real-time download monitoring</p>
+              </div>
             </div>
 
             {/* Failed Downloads Toggle */}
             <button
               onClick={() => setShowFailed(!showFailed)}
-              className={`px-4 py-2 rounded-lg font-medium transition-all ${
+              className={`group relative px-6 py-3 rounded-xl font-bold transition-all duration-300 ${
                 showFailed
-                  ? 'bg-red-500 text-white'
-                  : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                  ? 'bg-gradient-to-r from-red-500 to-pink-600 text-white shadow-lg shadow-red-500/50 scale-105'
+                  : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10 hover:border-white/20 hover:scale-105'
               }`}
             >
-              {showFailed ? '✕ Hide Failed' : `⚠️ Failed (${stats.failed || 0})`}
+              <span className="flex items-center gap-2">
+                {showFailed ? (
+                  <>✕ Hide Failed</>
+                ) : (
+                  <>
+                    <span className={`${stats.failed > 0 ? 'animate-pulse' : ''}`}>⚠️</span>
+                    Failed ({stats.failed || 0})
+                  </>
+                )}
+              </span>
             </button>
           </div>
         </div>
@@ -94,7 +114,7 @@ function App() {
       )}
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-6">
+      <main className="relative container mx-auto px-6 py-8">
         <DownloadSection
           downloads={filteredDownloads}
           section={showFailed ? 'failed' : activeSection}
@@ -103,8 +123,13 @@ function App() {
       </main>
 
       {/* Footer */}
-      <footer className="text-center py-6 text-gray-500 text-sm">
-        Auto-refreshing every 5 seconds • Completed items auto-cleanup after 48 hours
+      <footer className="relative text-center py-8 text-gray-400 text-sm font-medium">
+        <div className="flex items-center justify-center gap-2">
+          <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+          Auto-refresh every 5s
+          <span className="text-gray-600">•</span>
+          48h auto-cleanup
+        </div>
       </footer>
     </div>
   )
