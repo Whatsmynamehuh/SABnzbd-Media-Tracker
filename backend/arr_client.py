@@ -43,6 +43,7 @@ class ArrClient:
 
         # Clean the parsed title for better matching
         clean_title = self._clean_title(parsed_title)
+        print(f"[Match Debug] Cleaned search title: '{clean_title}'")
 
         # Get all items from Radarr/Sonarr
         if self.arr_type == "radarr":
@@ -53,11 +54,14 @@ class ArrClient:
         if not items:
             return None
 
+        print(f"[Match Debug] Searching {len(items)} items in {self.name}")
+
         # Build list of candidates with match scores
         candidates = []
 
         for item in items:
-            item_title = self._clean_title(item.get("title", ""))
+            item_title_raw = item.get("title", "")
+            item_title = self._clean_title(item_title_raw)
             item_year = item.get("year")
 
             # Calculate match score
@@ -67,17 +71,23 @@ class ArrClient:
                 candidates.append({
                     "item": item,
                     "score": score,
-                    "title": item.get("title", "")
+                    "title": item_title_raw
                 })
+                print(f"[Match Debug] Candidate: '{item_title_raw}' (cleaned: '{item_title}') - Score: {score}")
 
         # Sort by score (highest first) and return best match
         if candidates:
             candidates.sort(key=lambda x: x["score"], reverse=True)
             best_match = candidates[0]
+            print(f"[Match Debug] Best match: '{best_match['title']}' with score {best_match['score']}")
 
             # Only return if score meets minimum threshold
             if best_match["score"] >= 60:  # Minimum 60% match
                 return self._format_item(best_match["item"])
+            else:
+                print(f"[Match Debug] Best score {best_match['score']} is below threshold of 60")
+        else:
+            print(f"[Match Debug] No candidates with score > 0")
 
         return None
 
