@@ -246,32 +246,29 @@ class ArrManager:
         return instance_name
 
     async def search_all(self, title: str, category: Optional[str] = None) -> Optional[Dict[str, Any]]:
-        """Search Radarr/Sonarr instances for a title.
-        Uses category to determine which instance to search first for better accuracy.
+        """Search specific Radarr/Sonarr instance based on category.
+        NO FALLBACK - only searches the instance that matches the category.
         """
-        # Try category-based search first
-        if category:
-            target_instance = self._map_category_to_instance(category)
-            if target_instance:
-                # Search the specific instance that matches the category
-                for client in self.clients:
-                    if client.name == target_instance:
-                        print(f"[Poster Match] Searching '{target_instance}' for '{title}' (category: {category})")
-                        result = await client.search_by_title(title)
-                        if result:
-                            print(f"[Poster Match] ✓ Found in '{target_instance}': {result.get('media_title')}")
-                            return result
-                        else:
-                            print(f"[Poster Match] ✗ Not found in '{target_instance}'")
-                        break
+        if not category:
+            # No category = no search
+            return None
 
-        # Fall back to searching all instances if category search failed
-        print(f"[Poster Match] Searching all instances for '{title}'...")
+        target_instance = self._map_category_to_instance(category)
+        if not target_instance:
+            # Can't map category to instance
+            return None
+
+        # Search ONLY the specific instance that matches the category
         for client in self.clients:
-            result = await client.search_by_title(title)
-            if result:
-                print(f"[Poster Match] ✓ Found in '{client.name}': {result.get('media_title')}")
+            if client.name == target_instance:
+                print(f"[Poster Match] Searching '{target_instance}' for '{title}' (category: {category})")
+                result = await client.search_by_title(title)
+                if result:
+                    print(f"[Poster Match] ✓ Found in '{target_instance}': {result.get('media_title')}")
+                else:
+                    print(f"[Poster Match] ✗ Not found in '{target_instance}'")
                 return result
 
-        print(f"[Poster Match] ✗ No match found in any instance for '{title}'")
+        # Instance name didn't match any configured clients
+        print(f"[Poster Match] ⚠️  Instance '{target_instance}' not configured (category: {category})")
         return None
