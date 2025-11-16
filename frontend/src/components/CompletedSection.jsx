@@ -1,3 +1,5 @@
+import { useRef, useEffect } from 'react'
+
 function CompletedItem({ download }) {
   const formatTimeAgo = (dateString) => {
     if (!dateString) return 'Just now'
@@ -57,6 +59,25 @@ function CompletedItem({ download }) {
 }
 
 export default function CompletedSection({ downloads }) {
+  const scrollContainerRef = useRef(null)
+
+  // Enable horizontal scrolling with mouse wheel on desktop
+  useEffect(() => {
+    const scrollContainer = scrollContainerRef.current
+    if (!scrollContainer) return
+
+    const handleWheel = (e) => {
+      // Only handle horizontal scrolling if there's content to scroll
+      if (scrollContainer.scrollWidth > scrollContainer.clientWidth) {
+        e.preventDefault()
+        scrollContainer.scrollLeft += e.deltaY
+      }
+    }
+
+    scrollContainer.addEventListener('wheel', handleWheel, { passive: false })
+    return () => scrollContainer.removeEventListener('wheel', handleWheel)
+  }, [downloads.length])
+
   if (downloads.length === 0) {
     return (
       <section>
@@ -78,10 +99,11 @@ export default function CompletedSection({ downloads }) {
         <h2 className="text-2xl font-bold text-white">
           Recently Completed <span className="text-gray-600">({downloads.length})</span>
         </h2>
-        <p className="text-sm text-gray-500">Auto-cleanup after 48 hours</p>
+        <p className="text-sm text-gray-500">Auto-cleanup after 48 hours • Scroll with mouse wheel</p>
       </div>
 
       <div
+        ref={scrollContainerRef}
         className="flex gap-3 overflow-x-auto pb-4 scrollbar-hide"
         style={{
           WebkitOverflowScrolling: 'touch',

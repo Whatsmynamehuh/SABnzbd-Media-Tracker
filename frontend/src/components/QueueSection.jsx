@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import axios from 'axios'
 import PrioritySelector from './PrioritySelector'
 
@@ -136,6 +136,25 @@ function QueueItem({ download, position }) {
 }
 
 export default function QueueSection({ downloads }) {
+  const scrollContainerRef = useRef(null)
+
+  // Enable horizontal scrolling with mouse wheel on desktop
+  useEffect(() => {
+    const scrollContainer = scrollContainerRef.current
+    if (!scrollContainer) return
+
+    const handleWheel = (e) => {
+      // Only handle horizontal scrolling if there's content to scroll
+      if (scrollContainer.scrollWidth > scrollContainer.clientWidth) {
+        e.preventDefault()
+        scrollContainer.scrollLeft += e.deltaY
+      }
+    }
+
+    scrollContainer.addEventListener('wheel', handleWheel, { passive: false })
+    return () => scrollContainer.removeEventListener('wheel', handleWheel)
+  }, [downloads.length])
+
   if (downloads.length === 0) {
     return (
       <section>
@@ -158,11 +177,12 @@ export default function QueueSection({ downloads }) {
           Queue <span className="text-gray-600">({downloads.length})</span>
         </h2>
         <p className="text-sm text-gray-500">
-          Click to change priority • Force / High / Normal
+          Click to change priority • Scroll with mouse wheel
         </p>
       </div>
 
       <div
+        ref={scrollContainerRef}
         className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide"
         style={{
           WebkitOverflowScrolling: 'touch',
