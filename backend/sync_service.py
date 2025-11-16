@@ -104,7 +104,7 @@ class SyncService:
 
                 deleted_count = result.rowcount
                 if deleted_count > 0:
-                    print(f"[{datetime.now()}] Cleaned up {deleted_count} completed downloads")
+                    print(f"[{datetime.now().strftime('%H:%M:%S')}] 🗑️  Cleaned up {deleted_count} completed downloads (older than {self.cleanup_hours}h)")
 
         except Exception as e:
             print(f"Error cleaning up completed downloads: {e}")
@@ -122,33 +122,66 @@ class SyncService:
         return result.scalars().all()
 
     async def fetch_missing_media_info(self):
-        """Fetch media info for downloads that don't have it yet (batched)."""
+        """Fetch media info for downloads that don't have it yet (batched, prioritized)."""
         try:
             async for session in db.get_session():
-                # Count total without posters
-                total_result = await session.execute(
+                # Count total active items without posters
+                active_result = await session.execute(
                     select(Download)
                     .where(Download.poster_url == None)
                     .where(Download.status.in_(['downloading', 'queued']))
                 )
-                total_without = len(total_result.scalars().all())
+                active_without = len(active_result.scalars().all())
+
+                # Count total completed items without posters
+                completed_result = await session.execute(
+                    select(Download)
+                    .where(Download.poster_url == None)
+                    .where(Download.status == 'completed')
+                )
+                completed_without = len(completed_result.scalars().all())
+
+                total_without = active_without + completed_without
 
                 if total_without == 0:
                     return
 
-                # Get up to 20 items without posters (increased from 10)
-                result = await session.execute(
-                    select(Download)
-                    .where(Download.poster_url == None)
-                    .where(Download.status.in_(['downloading', 'queued']))
-                    .limit(20)
-                )
-                downloads_without_info = result.scalars().all()
+                # Priority 1: Downloading items first
+                # Priority 2: Queued items (ordered by queue position #1, #2, #3...)
+                # Priority 3: Completed items (after queue is done)
+                if active_without > 0:
+                    # Fetch active/queued items first, ordered by position
+                    result = await session.execute(
+                        select(Download)
+                        .where(Download.poster_url == None)
+                        .where(Download.status.in_(['downloading', 'queued']))
+                        .order_by(
+                            Download.status.desc(),  # downloading before queued
+                            Download.queue_position.asc()  # then by position #1, #2, #3...
+                        )
+                        .limit(20)
+                    )
+                    downloads_without_info = result.scalars().all()
+                    fetch_type = "queue"
+                else:
+                    # All queue items have posters, now fetch completed items
+                    result = await session.execute(
+                        select(Download)
+                        .where(Download.poster_url == None)
+                        .where(Download.status == 'completed')
+                        .order_by(Download.completed_at.desc())  # newest first
+                        .limit(20)
+                    )
+                    downloads_without_info = result.scalars().all()
+                    fetch_type = "completed"
 
                 if not downloads_without_info:
                     return
 
-                print(f"[{datetime.now().strftime('%H:%M:%S')}] 🖼️  Fetching media info for {len(downloads_without_info)} items... ({total_without} remaining)")
+                if fetch_type == "queue":
+                    print(f"[{datetime.now().strftime('%H:%M:%S')}] 🖼️  Fetching posters for queue (priority order)... ({active_without} active + {completed_without} completed remaining)")
+                else:
+                    print(f"[{datetime.now().strftime('%H:%M:%S')}] 🖼️  Queue done! Fetching posters for completed items... ({completed_without} remaining)")
 
                 found_count = 0
                 for download in downloads_without_info:
@@ -162,13 +195,19 @@ class SyncService:
                             download.arr_instance = media_info.get("arr_instance")
                             found_count += 1
                     except Exception as e:
-                        print(f"  ✗ Error fetching media info for {download.name[:50]}: {e}")
+                        print(f"  ✗ Error: {str(e)[:80]}")
                         continue
 
                 await session.commit()
 
-                remaining = total_without - found_count
-                print(f"  ✓ Found {found_count}/{len(downloads_without_info)} • {remaining} still need posters")
+                # Calculate totals for progress display
+                if fetch_type == "queue":
+                    total_items = active_without + completed_without
+                    found_so_far = total_items - (active_without - found_count) - completed_without
+                    print(f"  ✓ Found {found_count}/{len(downloads_without_info)} • Progress: {found_so_far}/{total_items} posters")
+                else:
+                    remaining = completed_without - found_count
+                    print(f"  ✓ Found {found_count}/{len(downloads_without_info)} • {remaining} completed items still need posters")
 
         except Exception as e:
             print(f"[{datetime.now().strftime('%H:%M:%S')}] ❌ Error fetching media info: {e}")
