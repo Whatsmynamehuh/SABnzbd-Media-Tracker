@@ -26,12 +26,17 @@ class CleanupConfig(BaseModel):
     check_interval_minutes: int = 60
 
 
+class DebugConfig(BaseModel):
+    enable_priority_logging: bool = False
+
+
 class Config(BaseModel):
     sabnzbd: SABnzbdConfig
     radarr: List[ArrInstanceConfig] = []
     sonarr: List[ArrInstanceConfig] = []
     server: ServerConfig = ServerConfig()
     cleanup: CleanupConfig = CleanupConfig()
+    debug: DebugConfig = DebugConfig()
 
 
 def load_config(config_path: str = "config.yml") -> Config:

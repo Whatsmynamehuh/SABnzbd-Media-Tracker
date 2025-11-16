@@ -5,9 +5,10 @@ import PTN
 
 
 class SABnzbdClient:
-    def __init__(self, url: str, api_key: str):
+    def __init__(self, url: str, api_key: str, enable_priority_logging: bool = False):
         self.url = url.rstrip('/')
         self.api_key = api_key
+        self.enable_priority_logging = enable_priority_logging
 
     async def _make_request(self, mode: str, extra_params: Dict[str, Any] = None) -> Dict[str, Any]:
         """Make a request to SABnzbd API."""
@@ -115,10 +116,10 @@ class SABnzbdClient:
 
             priority_value = slot.get("priority")
 
-            # Debug: Log RAW priority value and entire slot for top 3 items (disabled - causes performance issues)
-            # if position <= 3:
-            #     print(f"[RAW Priority Debug] Pos {position}: RAW value = {repr(priority_value)} (type: {type(priority_value).__name__})")
-            #     print(f"[RAW Priority Debug] Pos {position}: Full slot data = {slot}")
+            # Debug logging (controlled by config.yml -> debug.enable_priority_logging)
+            if self.enable_priority_logging and position <= 3:
+                print(f"[RAW Priority Debug] Pos {position}: RAW value = {repr(priority_value)} (type: {type(priority_value).__name__})")
+                print(f"[RAW Priority Debug] Pos {position}: Full slot data = {slot}")
 
             # Parse filename to extract season/episode for TV shows
             filename = slot.get("filename", "")

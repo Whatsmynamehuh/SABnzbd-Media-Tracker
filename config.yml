@@ -46,3 +46,7 @@ server:
 cleanup:
   completed_after_hours: 48  # Auto-remove completed items after 48 hours
   check_interval_minutes: 60  # How often to run cleanup
+
+# Debug settings
+debug:
+  enable_priority_logging: false  # Enable detailed priority debugging (WARNING: may impact performance)

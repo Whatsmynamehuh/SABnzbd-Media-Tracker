@@ -16,7 +16,11 @@ class SyncService:
 
     def __init__(self):
         config = get_config()
-        self.sabnzbd = SABnzbdClient(config.sabnzbd.url, config.sabnzbd.api_key)
+        self.sabnzbd = SABnzbdClient(
+            config.sabnzbd.url,
+            config.sabnzbd.api_key,
+            enable_priority_logging=config.debug.enable_priority_logging
+        )
 
         # Initialize Arr manager
         radarr_configs = [r.dict() for r in config.radarr]
