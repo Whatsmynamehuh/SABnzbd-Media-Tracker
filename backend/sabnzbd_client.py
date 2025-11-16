@@ -114,6 +114,11 @@ class SABnzbdClient:
 
             priority_value = slot.get("priority")
 
+            # Debug: Log RAW priority value and entire slot for top 3 items
+            if position <= 3:
+                print(f"[RAW Priority Debug] Pos {position}: RAW value = {repr(priority_value)} (type: {type(priority_value).__name__})")
+                print(f"[RAW Priority Debug] Pos {position}: Full slot data = {slot}")
+
             items.append({
                 "id": slot.get("nzo_id"),
                 "name": slot.get("filename"),
@@ -128,10 +133,6 @@ class SABnzbdClient:
                 "priority": priority_value,
                 "queue_position": position,  # Track position in queue
             })
-
-            # Debug: Log priority for top 3 items to diagnose auto-change issue
-            if position <= 3:
-                print(f"[SABnzbd Priority Debug] Pos {position}: '{slot.get('filename', 'Unknown')[:40]}...' - SABnzbd reports priority: '{priority_value}'")
 
         return items
 
