@@ -2,27 +2,34 @@ version: '3.8'
 
 services:
   backend:
+    container_name: sabnzbd-tracker-backend
     build:
-      context: .
+      context: /mnt/user/1. Appdata/Scripts/SABnzbd-Media-Tracker
       dockerfile: Dockerfile
     ports:
       - "3001:3001"
     volumes:
-      - ./config.yml:/app/config.yml:ro
-      - ./data:/app/data
+      - /mnt/user/1. Appdata/Scripts/SABnzbd-Media-Tracker/config.yml:/app/config.yml:ro
+      - /mnt/user/1. Appdata/Scripts/SABnzbd-Media-Tracker/data:/app/data
     environment:
       - PYTHONUNBUFFERED=1
+    networks:
+      - sabnzbd-tracker
     restart: unless-stopped
 
   frontend:
+    container_name: sabnzbd-tracker-frontend
     build:
-      context: ./frontend
+      context: /mnt/user/1. Appdata/Scripts/SABnzbd-Media-Tracker/frontend
       dockerfile: Dockerfile
     ports:
       - "3000:80"
     depends_on:
       - backend
+    networks:
+      - sabnzbd-tracker
     restart: unless-stopped
 
-volumes:
-  data:
+networks:
+  sabnzbd-tracker:
+    name: sabnzbd-tracker-network
