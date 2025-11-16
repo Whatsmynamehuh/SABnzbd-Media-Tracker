@@ -202,23 +202,27 @@ class ArrManager:
 
         # Initialize Radarr clients
         for config in radarr_configs:
-            self.clients.append(ArrClient(
+            client = ArrClient(
                 name=config["name"],
                 url=config["url"],
                 api_key=config["api_key"],
                 arr_type="radarr",
                 category=config.get("category")  # Optional category mapping
-            ))
+            )
+            self.clients.append(client)
+            print(f"[Category Config] Loaded {client.name} with category: {client.category}")
 
         # Initialize Sonarr clients
         for config in sonarr_configs:
-            self.clients.append(ArrClient(
+            client = ArrClient(
                 name=config["name"],
                 url=config["url"],
                 api_key=config["api_key"],
                 arr_type="sonarr",
                 category=config.get("category")  # Optional category mapping
-            ))
+            )
+            self.clients.append(client)
+            print(f"[Category Config] Loaded {client.name} with category: {client.category}")
 
     async def search_all(self, title: str, category: Optional[str] = None) -> Optional[Dict[str, Any]]:
         """Search specific Radarr/Sonarr instance based on category.
@@ -228,8 +232,11 @@ class ArrManager:
             # No category = no search
             return None
 
+        print(f"[Category Match] Looking for category '{category}' among {len(self.clients)} instances")
+
         # Find the client that handles this category
         for client in self.clients:
+            print(f"[Category Match] Checking {client.name}: client.category='{client.category}' vs search='{category}' | Match: {client.category == category}")
             if client.category and client.category == category:
                 print(f"[Poster Match] Searching '{client.name}' for '{title}' (category: {category})")
                 result = await client.search_by_title(title)
