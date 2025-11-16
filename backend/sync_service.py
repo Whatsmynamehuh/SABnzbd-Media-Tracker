@@ -58,6 +58,10 @@ class SyncService:
                 for item in all_items:
                     await self._update_or_create_download(session, item, fetch_media_info)
 
+                # Clean up orphaned downloads (items in DB but no longer in SABnzbd)
+                # This handles cases where items were manually deleted or failed and removed from SABnzbd
+                await self._cleanup_orphaned_downloads(session, all_items)
+
                 await session.commit()
 
             # Calculate stats
@@ -122,6 +126,28 @@ class SyncService:
 
             # Mark for media info fetch (will be done by background job)
             session.add(download)
+
+    async def _cleanup_orphaned_downloads(self, session: AsyncSession, current_items: List[Dict[str, Any]]):
+        """Remove downloads that are no longer in SABnzbd (manually deleted or failed and removed)."""
+        # Get IDs of all items currently in SABnzbd
+        sabnzbd_ids = {item['id'] for item in current_items}
+
+        # Get all active downloads (downloading/queued) from database
+        result = await session.execute(
+            select(Download).where(Download.status.in_(['downloading', 'queued']))
+        )
+        db_downloads = result.scalars().all()
+
+        # Find orphaned downloads (in DB but not in SABnzbd)
+        for download in db_downloads:
+            if download.id not in sabnzbd_ids:
+                # Item was removed from SABnzbd - mark as failed
+                download.status = 'failed'
+                download.failed = True
+                download.failure_reason = 'Removed from SABnzbd (manually deleted or failed)'
+                download.completed_at = datetime.utcnow()
+                download.updated_at = datetime.utcnow()
+                print(f"{logger.timestamp()} 🗑️  Cleaned up orphaned download: {download.name}")
 
     async def cleanup_completed(self):
         """Remove completed downloads older than configured hours."""

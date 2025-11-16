@@ -188,8 +188,8 @@ async def get_all_downloads(session: AsyncSession = Depends(get_db_session)):
             arr_instance=d.arr_instance,
             season=d.season,
             episode=d.episode,
-            added_at=d.added_at.isoformat() if d.added_at else None,
-            completed_at=d.completed_at.isoformat() if d.completed_at else None,
+            added_at=d.added_at.isoformat() + 'Z' if d.added_at else None,
+            completed_at=d.completed_at.isoformat() + 'Z' if d.completed_at else None,
             failed=d.failed or False,
             failure_reason=d.failure_reason
         )

@@ -48,6 +48,11 @@ function CompletedItem({ download }) {
             <h3 className="font-bold text-white text-xs mb-1 line-clamp-2">
               {download.media_title || download.name}
             </h3>
+            {download.media_type === 'tv' && download.season && download.episode && (
+              <p className="text-orange-400 text-xs font-semibold mb-1">
+                S{String(download.season).padStart(2, '0')}E{String(download.episode).padStart(2, '0')}
+              </p>
+            )}
             <p className="text-green-400 text-xs font-medium">
               {formatTimeAgo(download.completed_at)}
             </p>
