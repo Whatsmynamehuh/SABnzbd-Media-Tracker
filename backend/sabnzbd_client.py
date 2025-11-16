@@ -115,10 +115,10 @@ class SABnzbdClient:
 
             priority_value = slot.get("priority")
 
-            # Debug: Log RAW priority value and entire slot for top 3 items
-            if position <= 3:
-                print(f"[RAW Priority Debug] Pos {position}: RAW value = {repr(priority_value)} (type: {type(priority_value).__name__})")
-                print(f"[RAW Priority Debug] Pos {position}: Full slot data = {slot}")
+            # Debug: Log RAW priority value and entire slot for top 3 items (disabled - causes performance issues)
+            # if position <= 3:
+            #     print(f"[RAW Priority Debug] Pos {position}: RAW value = {repr(priority_value)} (type: {type(priority_value).__name__})")
+            #     print(f"[RAW Priority Debug] Pos {position}: Full slot data = {slot}")
 
             # Parse filename to extract season/episode for TV shows
             filename = slot.get("filename", "")
