@@ -33,6 +33,10 @@ wheels/
 .env.local
 .env.*.local
 
+# Config (contains sensitive API keys)
+config.yml
+data/
+
 # IDEs
 .vscode/
 .idea/
