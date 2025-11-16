@@ -265,7 +265,8 @@ class SyncService:
                     download.poster_attempted = True
 
                     try:
-                        media_info = await self.arr_manager.search_all(download.name)
+                        # Pass category to help find the right instance
+                        media_info = await self.arr_manager.search_all(download.name, download.category)
                         if media_info:
                             download.media_type = media_info.get("media_type")
                             download.media_title = media_info.get("media_title")

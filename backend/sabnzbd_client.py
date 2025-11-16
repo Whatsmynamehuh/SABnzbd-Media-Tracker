@@ -89,10 +89,6 @@ class SABnzbdClient:
         # Parse speed string like "12.3 MB/s" or "500 KB/s" to MB/s
         global_speed_mb = self._parse_speed_to_mb(global_speed_str)
 
-        # DEBUG: Log global speed
-        if global_speed_mb > 0:
-            print(f"DEBUG: Global queue speed: '{global_speed_str}' -> {global_speed_mb} MB/s")
-
         for position, slot in enumerate(slots, start=1):
             # Determine status
             status = slot.get("status", "")
@@ -113,9 +109,6 @@ class SABnzbdClient:
             percentage = float(slot.get("percentage", 0))
             if item_status == "downloading" and percentage > 0:
                 item_speed = global_speed_mb
-                # DEBUG: Log speed assignment
-                if position == 1:
-                    print(f"DEBUG: Assigned speed {item_speed} MB/s to position #{position} ({slot.get('filename', 'unknown')} - {percentage}%)")
             else:
                 item_speed = 0.0
 
@@ -144,7 +137,6 @@ class SABnzbdClient:
             import re
             match = re.search(r'([\d.]+)\s*(KB/s|MB/s|GB/s|B/s|K|M|G)', speed_str, re.IGNORECASE)
             if not match:
-                print(f"DEBUG: Speed parsing failed - no match for '{speed_str}'")
                 return 0.0
 
             value = float(match.group(1))
@@ -160,10 +152,8 @@ class SABnzbdClient:
             elif unit == 'B/S':
                 return value / (1024 * 1024)  # Convert B/s to MB/s
 
-            print(f"DEBUG: Unknown speed unit '{unit}' in '{speed_str}'")
             return 0.0
-        except Exception as e:
-            print(f"DEBUG: Speed parsing error for '{speed_str}': {e}")
+        except Exception:
             return 0.0
 
     def parse_history_items(self, history_data: Dict[str, Any]) -> List[Dict[str, Any]]:

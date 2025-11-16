@@ -217,11 +217,61 @@ class ArrManager:
                 arr_type="sonarr"
             ))
 
-    async def search_all(self, title: str) -> Optional[Dict[str, Any]]:
-        """Search all Radarr/Sonarr instances for a title."""
+    def _map_category_to_instance(self, category: str) -> Optional[str]:
+        """Map SABnzbd category to Radarr/Sonarr instance name.
+        Examples:
+          - 'radarr-movies-anime' -> 'Radarr-Movies-Anime'
+          - 'sonarr-tvshows-animation' -> 'Sonarr-TvShows-Animation'
+        """
+        if not category:
+            return None
+
+        # Remove the service prefix (radarr- or sonarr-)
+        parts = category.split('-', 1)
+        if len(parts) < 2:
+            return None
+
+        service_type = parts[0].lower()  # 'radarr' or 'sonarr'
+        instance_suffix = parts[1]  # 'movies-anime', 'tvshows-animation', etc.
+
+        # Convert to title case for each part
+        # 'movies-anime' -> 'Movies-Anime'
+        instance_parts = [part.capitalize() for part in instance_suffix.split('-')]
+        instance_suffix_formatted = '-'.join(instance_parts)
+
+        # Construct full instance name
+        # 'radarr' + 'Movies-Anime' -> 'Radarr-Movies-Anime'
+        instance_name = f"{service_type.capitalize()}-{instance_suffix_formatted}"
+
+        return instance_name
+
+    async def search_all(self, title: str, category: Optional[str] = None) -> Optional[Dict[str, Any]]:
+        """Search Radarr/Sonarr instances for a title.
+        Uses category to determine which instance to search first for better accuracy.
+        """
+        # Try category-based search first
+        if category:
+            target_instance = self._map_category_to_instance(category)
+            if target_instance:
+                # Search the specific instance that matches the category
+                for client in self.clients:
+                    if client.name == target_instance:
+                        print(f"[Poster Match] Searching '{target_instance}' for '{title}' (category: {category})")
+                        result = await client.search_by_title(title)
+                        if result:
+                            print(f"[Poster Match] ✓ Found in '{target_instance}': {result.get('media_title')}")
+                            return result
+                        else:
+                            print(f"[Poster Match] ✗ Not found in '{target_instance}'")
+                        break
+
+        # Fall back to searching all instances if category search failed
+        print(f"[Poster Match] Searching all instances for '{title}'...")
         for client in self.clients:
             result = await client.search_by_title(title)
             if result:
+                print(f"[Poster Match] ✓ Found in '{client.name}': {result.get('media_title')}")
                 return result
 
+        print(f"[Poster Match] ✗ No match found in any instance for '{title}'")
         return None
