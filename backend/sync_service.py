@@ -175,10 +175,11 @@ class SyncService:
         """Fetch media info for downloads that don't have it yet (batched, prioritized)."""
         try:
             async for session in db.get_session():
-                # Count items without posters in each category
+                # Count items without posters that we haven't tried yet
                 downloading_result = await session.execute(
                     select(Download)
                     .where(Download.poster_url == None)
+                    .where(Download.poster_attempted == False)
                     .where(Download.status == 'downloading')
                 )
                 downloading_without = len(downloading_result.scalars().all())
@@ -186,6 +187,7 @@ class SyncService:
                 completed_result = await session.execute(
                     select(Download)
                     .where(Download.poster_url == None)
+                    .where(Download.poster_attempted == False)
                     .where(Download.status == 'completed')
                 )
                 completed_without = len(completed_result.scalars().all())
@@ -193,6 +195,7 @@ class SyncService:
                 queued_result = await session.execute(
                     select(Download)
                     .where(Download.poster_url == None)
+                    .where(Download.poster_attempted == False)
                     .where(Download.status == 'queued')
                 )
                 queued_without = len(queued_result.scalars().all())
@@ -212,38 +215,38 @@ class SyncService:
                     result = await session.execute(
                         select(Download)
                         .where(Download.poster_url == None)
+                        .where(Download.poster_attempted == False)
                         .where(Download.status == 'downloading')
                         .limit(20)
                     )
                     downloads_without_info = result.scalars().all()
                     fetch_type = "downloading"
-                    logger.poster_fetch_start("downloading", downloading_without, completed_without, queued_without)
 
                 elif completed_without > 0:
                     # Priority 2: Recently completed items (newest first)
                     result = await session.execute(
                         select(Download)
                         .where(Download.poster_url == None)
+                        .where(Download.poster_attempted == False)
                         .where(Download.status == 'completed')
                         .order_by(Download.completed_at.desc())  # newest first
                         .limit(20)
                     )
                     downloads_without_info = result.scalars().all()
                     fetch_type = "completed"
-                    logger.poster_fetch_start("completed", downloading_without, completed_without, queued_without)
 
                 elif queued_without > 0:
                     # Priority 3: Queued items (by position #2, #3, #4...)
                     result = await session.execute(
                         select(Download)
                         .where(Download.poster_url == None)
+                        .where(Download.poster_attempted == False)
                         .where(Download.status == 'queued')
                         .order_by(Download.queue_position.asc())  # #2, #3, #4...
                         .limit(20)
                     )
                     downloads_without_info = result.scalars().all()
                     fetch_type = "queued"
-                    logger.poster_fetch_start("queued", downloading_without, completed_without, queued_without)
 
                 else:
                     return
@@ -252,10 +255,12 @@ class SyncService:
                     return
 
                 # Fetch posters
-                found_items = []
-                not_found_items = []
+                found_count = 0
 
                 for download in downloads_without_info:
+                    # Mark as attempted (whether we find it or not)
+                    download.poster_attempted = True
+
                     try:
                         media_info = await self.arr_manager.search_all(download.name)
                         if media_info:
@@ -264,33 +269,16 @@ class SyncService:
                             download.poster_url = media_info.get("poster_url")
                             download.year = media_info.get("year")
                             download.arr_instance = media_info.get("arr_instance")
-
-                            # Format display name
-                            display_name = f"{media_info.get('media_title')} ({media_info.get('year')})" if media_info.get('year') else media_info.get('media_title')
-                            if media_info.get('arr_instance'):
-                                display_name += f" [{media_info.get('arr_instance')}]"
-                            found_items.append(display_name)
-                        else:
-                            not_found_items.append(download.name[:50])
+                            found_count += 1
                     except Exception as e:
-                        logger.error(str(e), download.name)
-                        not_found_items.append(download.name[:50])
+                        pass  # Already marked as attempted
 
                 await session.commit()
 
-                # Calculate total progress
-                # Count ALL items with posters now
-                all_with_posters = await session.execute(
-                    select(Download).where(Download.poster_url != None)
-                )
-                total_found = len(all_with_posters.scalars().all())
-
-                # Total needed = all downloads
-                all_downloads = await session.execute(select(Download))
-                total_needed = len(all_downloads.scalars().all())
-
-                # Log results
-                logger.poster_fetch_results(found_items, not_found_items, total_found, total_needed)
+                # Simple log output
+                if found_count > 0:
+                    remaining = downloading_without + completed_without + queued_without - len(downloads_without_info)
+                    print(f"{logger.timestamp()} 🖼️  Found {found_count} posters ({fetch_type}) • {remaining} remaining")
 
         except Exception as e:
             print(f"{logger.timestamp()} ❌ Error fetching media info: {e}")

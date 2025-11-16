@@ -28,6 +28,7 @@ class Download(Base):
     poster_url = Column(String, nullable=True)
     year = Column(Integer, nullable=True)
     arr_instance = Column(String, nullable=True)  # Which Radarr/Sonarr instance
+    poster_attempted = Column(Boolean, default=False)  # Have we tried fetching poster?
 
     # Timestamps
     added_at = Column(DateTime, default=datetime.utcnow)
