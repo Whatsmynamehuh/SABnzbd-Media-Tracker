@@ -3,7 +3,7 @@
 
 sabnzbd:
   url: "http://192.168.50.237:8086"
-  api_key: "YOUR_API_KEY_HERE"  # ← I need your SABnzbd API key!
+  api_key: "599302f116cc47d3922127273ee3e4c3"
 
 # Configure your Radarr instances (movies)
 # IMPORTANT: The 'category' must match what you configured in Radarr's download client settings!
