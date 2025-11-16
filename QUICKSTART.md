@@ -13,6 +13,16 @@ Edit `config.yml` and add your:
 - Radarr instance(s) URL and API key
 - Sonarr instance(s) URL and API key
 
+### 1.5. Test Your Configuration (Recommended)
+
+Before starting the app, test your configuration:
+
+```bash
+python3 test-config.py
+```
+
+This will check if SABnzbd and all Radarr/Sonarr instances are reachable and properly configured.
+
 ### 2. Run the Interactive Startup Script
 
 **Linux/Mac:**
@@ -102,9 +112,11 @@ Once you're in, you'll see:
 - Make sure the download name matches something in Radarr/Sonarr
 
 ### Backend won't start?
+- **Run the test script first**: `python3 test-config.py`
 - Make sure `config.yml` exists and is properly formatted
 - Check SABnzbd is running and accessible
 - Verify Python 3.9+ is installed: `python3 --version`
+- Check the backend terminal for error messages
 
 ## Stopping the App
 

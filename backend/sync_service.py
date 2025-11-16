@@ -1,4 +1,5 @@
 import asyncio
+import aiohttp
 from datetime import datetime, timedelta
 from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -43,10 +44,12 @@ class SyncService:
 
                 await session.commit()
 
-            print(f"[{datetime.now()}] Synced {len(all_items)} downloads")
+            print(f"[{datetime.now().strftime('%H:%M:%S')}] ✅ Synced {len(all_items)} downloads")
 
+        except aiohttp.ClientConnectorError as e:
+            print(f"[{datetime.now().strftime('%H:%M:%S')}] ⚠️  Cannot connect to SABnzbd - check if it's running and config.yml is correct")
         except Exception as e:
-            print(f"Error syncing downloads: {e}")
+            print(f"[{datetime.now().strftime('%H:%M:%S')}] ❌ Error syncing downloads: {e}")
 
     async def _update_or_create_download(self, session: AsyncSession, item: Dict[str, Any]):
         """Update or create a download record."""

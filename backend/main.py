@@ -52,11 +52,33 @@ sync_service = SyncService()
 async def lifespan(app: FastAPI):
     """Startup and shutdown events."""
     # Startup
-    config = get_config()
-    await db.init_db()
+    try:
+        config = get_config()
+    except FileNotFoundError as e:
+        print(f"❌ ERROR: {e}")
+        print("Please create config.yml from config.example.yml and configure it.")
+        raise
+    except Exception as e:
+        print(f"❌ ERROR loading config: {e}")
+        raise
 
-    # Initial sync
-    await sync_service.sync_downloads()
+    # Initialize database
+    try:
+        await db.init_db()
+        print("✅ Database initialized")
+    except Exception as e:
+        print(f"❌ ERROR initializing database: {e}")
+        raise
+
+    # Initial sync (non-blocking - will retry on schedule)
+    print("🔄 Attempting initial sync with SABnzbd...")
+    try:
+        await sync_service.sync_downloads()
+        print("✅ Initial sync successful")
+    except Exception as e:
+        print(f"⚠️  Initial sync failed: {e}")
+        print("⚠️  Will retry automatically every 5 seconds...")
+        print("⚠️  Please check your config.yml and ensure SABnzbd is running")
 
     # Schedule periodic syncs
     scheduler.add_job(sync_service.sync_downloads, 'interval', seconds=5, id='sync_downloads')
@@ -68,13 +90,20 @@ async def lifespan(app: FastAPI):
     )
     scheduler.start()
 
-    print(f"✅ SABnzbd Media Tracker started")
-    print(f"📊 Real-time sync: Every 5 seconds")
-    print(f"🧹 Cleanup: Every {config.cleanup.check_interval_minutes} minutes (removing items older than {config.cleanup.completed_after_hours}h)")
+    print("")
+    print("════════════════════════════════════════════════════════════")
+    print("  ✅ SABnzbd Media Tracker Backend Started")
+    print("════════════════════════════════════════════════════════════")
+    print(f"  📊 Real-time sync: Every 5 seconds")
+    print(f"  🧹 Cleanup: Every {config.cleanup.check_interval_minutes} minutes")
+    print(f"  🗑️  Auto-remove completed after {config.cleanup.completed_after_hours}h")
+    print("════════════════════════════════════════════════════════════")
+    print("")
 
     yield
 
     # Shutdown
+    print("🛑 Shutting down...")
     scheduler.shutdown()
 
 
