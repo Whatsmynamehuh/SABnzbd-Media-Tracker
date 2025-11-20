@@ -4,6 +4,9 @@ A beautiful, real-time web interface for monitoring your SABnzbd downloads with 
 
 ![SABnzbd Media Tracker](https://img.shields.io/badge/Status-Production%20Ready-green)
 
+<img width="1637" height="908" alt="image" src="https://github.com/user-attachments/assets/a572ffed-3e2e-4451-8183-f64fe3e5c5ee" />
+
+
 ## Features
 
 - **Real-time Progress Tracking**: Auto-refreshing every 2 seconds to show live download progress
