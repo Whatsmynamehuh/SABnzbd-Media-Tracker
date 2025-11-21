@@ -5,17 +5,27 @@ services:
     container_name: sabnzbd-tracker-backend
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: backend/Dockerfile
     ports:
       - "3001:3001"
     volumes:
-      - /mnt/user/1. Appdata/Scripts/SABnzbd-Media-Tracker/config.yml:/app/config.yml:ro
-      - /mnt/user/1. Appdata/Scripts/SABnzbd-Media-Tracker/data:/app/data
+      # FIXED: Use relative paths instead of hardcoded absolute paths
+      - ./config.yml:/app/config.yml:ro
+      - ./data:/app/data
     environment:
       - PYTHONUNBUFFERED=1
+      # Optional: Override config with environment variables
+      # - SABNZBD_URL=http://sabnzbd:8080
+      # - SABNZBD_API_KEY=your_key_here
     networks:
       - sabnzbd-tracker
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:3001').read()"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
   frontend:
     container_name: sabnzbd-tracker-frontend
@@ -25,10 +35,16 @@ services:
     ports:
       - "3000:80"
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     networks:
       - sabnzbd-tracker
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
 networks:
   sabnzbd-tracker:
